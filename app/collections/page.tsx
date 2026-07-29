@@ -1,0 +1,158 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import Image from 'next/image';
+import Link from 'next/link';
+import Footer from '@/components/layout/Footer';
+
+const allCollections = [
+  {
+    id: 'groom',
+    name: 'Groom Collection',
+    image: '/products/groom-collection-3.png',
+    description: 'Curated exclusively for the groom — sherwanis, suits & more',
+    items: 24,
+  },
+  {
+    id: 'festive',
+    name: 'Festive Wear',
+    image: '/products/Festive-collection.png',
+    description: 'Celebrate Diwali, Eid & every occasion in vibrant style',
+    items: 32,
+  },
+  {
+    id: 'indo-western',
+    name: 'Indo-Western',
+    image: '/products/Indo-western-collection.png',
+    description: 'Modern fusion silhouettes blending East and West',
+    items: 28,
+  },
+  {
+    id: 'sherwanis',
+    name: 'Sherwanis',
+    image: '/products/sherwani-collection.png',
+    description: 'Regal sherwanis for weddings and grand occasions',
+    items: 18,
+  },
+  {
+    id: 'kurtas',
+    name: 'Kurtas',
+    image: '/products/kurtas-collection.png',
+    description: 'From silk festive kurtas to casual everyday styles',
+    items: 35,
+  },
+  {
+    id: 'blazers',
+    name: 'Blazers & Suits',
+    image: '/products/blazer-suits-collection.png',
+    description: 'Impeccably tailored formal wear for every occasion',
+    items: 22,
+  },
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6 },
+  },
+};
+
+export default function CollectionsPage() {
+  return (
+    <main className="bg-background text-foreground">
+      <div className="pt-28 pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-16"
+          >
+            <h1 className="text-6xl md:text-7xl font-playfair font-bold mb-4">
+              All Collections
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-light">
+              Explore our complete range of curated collections, each designed to
+              celebrate your unique style and special moments
+            </p>
+          </motion.div>
+
+          {/* Collections Grid */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {allCollections.map((collection) => (
+              <motion.div key={collection.id} variants={itemVariants}>
+                <Link href={`/collection/${collection.id}`}>
+                  <motion.div
+                    whileHover={{ y: -8 }}
+                    className="group cursor-pointer"
+                  >
+                    {/* Image */}
+                    <div className="relative h-96 rounded-2xl overflow-hidden mb-6 shadow-premium hover:shadow-premium-lg transition-all duration-500">
+                      <Image
+                        src={collection.image}
+                        alt={collection.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent group-hover:from-black/90 transition-colors duration-500" />
+
+                      {/* Hover Content */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileHover={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="absolute inset-0 flex flex-col items-center justify-center text-center p-6"
+                      >
+                        <p className="text-white/90 text-sm font-light mb-4">
+                          {collection.description}
+                        </p>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          className="px-6 py-2 bg-accent text-luxury-black font-semibold rounded-lg"
+                        >
+                          Explore
+                        </motion.button>
+                      </motion.div>
+                    </div>
+
+                    {/* Collection Info */}
+                    <div>
+                      <h3 className="text-2xl font-playfair font-bold text-foreground mb-2 group-hover:text-accent transition-colors">
+                        {collection.name}
+                      </h3>
+                      <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                        {collection.description}
+                      </p>
+                      <p className="text-sm text-accent font-medium">
+                        {collection.items} pieces
+                      </p>
+                    </div>
+                  </motion.div>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+      <Footer />
+    </main>
+  );
+}
