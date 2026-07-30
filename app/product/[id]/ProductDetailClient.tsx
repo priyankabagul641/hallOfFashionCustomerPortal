@@ -7,7 +7,16 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { products, Product } from '@/data/products';
+import { getProduct, ProductDetail } from '@/lib/api/products';
+import { ApiError } from '@/lib/api-client';
+import ProductLoadError from '@/components/products/ProductLoadError';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Backend product detail has no size/stock variants on the public endpoint
+// yet (that's SKU-level data behind product_variants) — fall back to a fixed
+// standard size run until that contract exists.
+// ponytail: static size list, replace with product.variants once backend exposes it.
+const STANDARD_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 import { MeasurementProfile, summarizeMeasurementProfile } from '@/data/measurements';
 import MeasurementProfilePickerModal from '@/components/measurements/MeasurementProfilePickerModal';
 import { Heart, ShoppingBag, Share2, Check, Star, Truck, RotateCcw, CheckCircle, ArrowLeft, X } from 'lucide-react';
@@ -18,7 +27,11 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
 
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<ProductDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState('');
@@ -103,25 +116,43 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     const productId = params.id as string;
-    const foundProduct = products.find((p) => p.id === productId);
-    if (foundProduct) {
-      setProduct(foundProduct);
-      if (foundProduct.sizes.length > 0) {
-        setSelectedSize(foundProduct.sizes[0]);
-      }
-      setSelectedColorOption(
-        foundProduct.colorOptions?.[0] ?? { name: foundProduct.color, hex: '#c8a56b', images: foundProduct.images }
-      );
-      setSelectedImage(0);
-      setLoadedImages({});
-    }
-  }, [params.id]);
+    let cancelled = false;
+    getProduct(productId)
+      .then((res) => {
+        if (cancelled) return;
+        const foundProduct = res.data;
+        setProduct(foundProduct);
+        setNotFound(false);
+        setError(null);
+        setSelectedSize(STANDARD_SIZES[0]);
+        const firstColor = foundProduct.colorOptions?.[0];
+        setSelectedColorOption(
+          firstColor
+            ? { name: firstColor.color, hex: firstColor.colorCode || '#c8a56b', images: firstColor.images }
+            : { name: 'Default', hex: '#c8a56b', images: foundProduct.images }
+        );
+        setSelectedImage(0);
+        setLoadedImages({});
+      })
+      .catch((err: ApiError) => {
+        if (cancelled) return;
+        if (err?.status === 404) setNotFound(true);
+        else setError('Failed to load product. Please refresh.');
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [params.id, reloadKey]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setReloadKey((k) => k + 1);
+  };
 
   const isWishlisted = product ? isInWishlist(product.id) : false;
   const availableColors = product?.colorOptions?.length
-    ? product.colorOptions
+    ? product.colorOptions.map((c) => ({ name: c.color, hex: c.colorCode || '#c8a56b', images: c.images }))
     : product
-      ? [{ name: product.color, hex: '#c8a56b', images: product.images }]
+      ? [{ name: 'Default', hex: '#c8a56b', images: product.images }]
       : [];
   const activeImages = selectedColorOption?.images?.length ? selectedColorOption.images : product?.images ?? [];
 
@@ -140,7 +171,7 @@ export default function ProductDetailPage() {
     addToCart({
       id: product.id,
       name: product.name,
-      price: product.discountPrice || product.price,
+      price: product.price,
       quantity: quantity,
       image: activeImages[0] || product.images[0],
       size: selectedSize,
@@ -178,7 +209,7 @@ export default function ProductDetailPage() {
       addToWishlist({
         id: product.id,
         name: product.name,
-        price: product.discountPrice || product.price,
+        price: product.price,
         image: product.images[0],
         designer: product.designer,
       });
@@ -213,7 +244,41 @@ export default function ProductDetailPage() {
     setShowCustomSizePicker(false);
   };
 
-  if (!product) {
+  if (loading) {
+    return (
+      <main className="bg-background text-foreground min-h-screen flex flex-col">
+        <div className="flex-1 pt-28 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div className="lg:col-span-7 grid grid-cols-2 gap-4 sm:gap-5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
+              ))}
+            </div>
+            <div className="lg:col-span-5 space-y-4">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-10 w-3/4" />
+              <Skeleton className="h-8 w-1/2" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="bg-background text-foreground min-h-screen flex flex-col">
+        <div className="flex-1 flex items-center justify-center pt-28">
+          <ProductLoadError message={error} onRetry={handleRetry} />
+        </div>
+        <Footer />
+      </main>
+    );
+  }
+
+  if (!product || notFound) {
     return (
       <main className="bg-background text-foreground min-h-screen flex flex-col">
         <div className="flex-1 flex items-center justify-center pt-28">
@@ -340,13 +405,8 @@ export default function ProductDetailPage() {
               <div className="space-y-2 pb-6 border-b border-border">
                 <div className="flex items-center gap-4">
                   <p className="text-3xl font-bold text-accent">
-                    ₹{(product.discountPrice || product.price).toLocaleString()}
+                    ₹{product.price.toLocaleString()}
                   </p>
-                  {product.discountPrice && (
-                    <p className="text-xl text-muted-foreground line-through">
-                      ₹{product.price.toLocaleString()}
-                    </p>
-                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {product.description}
@@ -359,7 +419,7 @@ export default function ProductDetailPage() {
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <label className="text-sm font-semibold">Select Color</label>
                     <span className="text-sm text-muted-foreground">
-                      {selectedColorOption?.name || product.color}
+                      {selectedColorOption?.name}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-3">
@@ -398,7 +458,7 @@ export default function ProductDetailPage() {
                     Select Size
                   </label>
                   <div className="flex flex-wrap gap-3">
-                    {product.sizes.map((size) => (
+                    {STANDARD_SIZES.map((size) => (
                       <motion.button
                         key={getStandardSize(size)}
                         whileHover={{ scale: 1.05 }}
@@ -451,7 +511,7 @@ export default function ProductDetailPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-3">
-                    {product.sizes.map((size) => (
+                    {STANDARD_SIZES.map((size) => (
                       <motion.button
                         key={getStandardSize(size)}
                         whileHover={{ scale: 1.05 }}
@@ -554,15 +614,15 @@ export default function ProductDetailPage() {
                   </span>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                    // ponytail: no stock count on public product endpoint yet, cap at 10
+                    // as a sane default; switch to Math.min(product.stock, quantity + 1)
+                    // once stock is exposed.
+                    onClick={() => setQuantity(Math.min(10, quantity + 1))}
                     className="px-4 py-2 border border-border rounded hover:bg-card transition-colors"
                   >
                     +
                   </motion.button>
                 </div>
-                {product.stock <= 5 && (
-                  <p className="text-sm text-red-500">Only {product.stock} left in stock!</p>
-                )}
               </div>
 
               {/* Action Buttons */}
@@ -668,7 +728,7 @@ export default function ProductDetailPage() {
                     <div>
                       <h3 className="font-bold mb-2">Occasion</h3>
                       <p className="text-muted-foreground text-sm">
-                        {product.occasion}
+                        {product.occasion.join(', ') || '—'}
                       </p>
                     </div>
                     <div>

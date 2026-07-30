@@ -1,11 +1,33 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { products } from '@/data/products';
+import { getProducts, Product } from '@/lib/api/products';
+import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
+import ProductLoadError from '@/components/products/ProductLoadError';
 
 export default function FestivalCollection() {
-  const festivalProducts = products.filter(p => p.occasion?.includes('Festive') && p.category === 'men').slice(0, 6);
+  const [festivalProducts, setFestivalProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // ponytail: occasion isn't on the public list endpoint yet, so this just
+  // pulls the men's category newest-first as a festive-ish stand-in.
+  useEffect(() => {
+    let cancelled = false;
+    getProducts({ category: 'men', sortBy: 'newest', pageSize: 6 })
+      .then((res) => { if (!cancelled) { setFestivalProducts(res.data.products); setError(null); } })
+      .catch(() => { if (!cancelled) setError('Failed to load products. Please refresh.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [reloadKey]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setReloadKey((k) => k + 1);
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -43,6 +65,13 @@ export default function FestivalCollection() {
         </motion.div>
 
         {/* Products Grid */}
+        {loading && festivalProducts.length === 0 ? (
+          <div className="mb-12"><ProductGridSkeleton count={6} /></div>
+        ) : error && festivalProducts.length === 0 ? (
+          <ProductLoadError message={error} onRetry={handleRetry} />
+        ) : festivalProducts.length === 0 ? (
+          <p className="text-center text-muted-foreground py-16 mb-12">No products found</p>
+        ) : (
         <motion.div
           variants={containerVariants}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12"
@@ -61,11 +90,6 @@ export default function FestivalCollection() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
-                  {product.discountPrice && (
-                    <div className="absolute top-4 right-4 bg-accent text-primary px-3 py-1 rounded-full text-xs font-bold">
-                      Sale
-                    </div>
-                  )}
                 </div>
                 <p className="text-sm text-muted-foreground mb-2">{product.designer}</p>
                 <h3 className="font-playfair text-lg font-semibold text-foreground group-hover:text-accent transition-colors mb-2 line-clamp-2">
@@ -73,18 +97,14 @@ export default function FestivalCollection() {
                 </h3>
                 <div className="flex items-center gap-2">
                   <p className="text-accent font-semibold">
-                    ₹{product.discountPrice ? product.discountPrice.toLocaleString('en-IN') : product.price.toLocaleString('en-IN')}
+                    ₹{product.price.toLocaleString('en-IN')}
                   </p>
-                  {product.discountPrice && (
-                    <p className="text-sm text-muted-foreground line-through">
-                      ₹{product.price.toLocaleString('en-IN')}
-                    </p>
-                  )}
                 </div>
               </Link>
             </motion.div>
           ))}
         </motion.div>
+        )}
 
         {/* CTA */}
         <motion.div variants={itemVariants} className="text-center">

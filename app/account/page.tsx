@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { Spinner } from '@/components/ui/spinner';
 import Footer from '@/components/layout/Footer';
 import { User, ShoppingBag, Heart, MapPin, Settings, LogOut, Package, Award, LucideIcon } from 'lucide-react';
 import { loadStoredOrders } from '@/lib/order-history';
@@ -13,8 +15,17 @@ type ActiveTab = 'profile' | 'orders' | 'wishlist' | 'addresses' | 'settings';
 
 export default function AccountPage() {
   const { user, logout } = useAuth();
+  const { isLoading } = useAuthGuard();
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
   const [orders] = useState<Order[]>(() => loadStoredOrders());
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <Spinner className="size-8" />
+      </main>
+    );
+  }
 
   if (!user) {
     return (

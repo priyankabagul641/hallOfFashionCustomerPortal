@@ -5,12 +5,15 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { Spinner } from '@/components/ui/spinner';
 import { ShoppingBag, MapPin, Lock, CheckCircle } from 'lucide-react';
 import { createOrderFromCart, saveStoredOrder } from '@/lib/order-history';
 
 type CheckoutStep = 'shipping' | 'payment' | 'confirmation';
 
 export default function CheckoutPage() {
+  const { isLoading } = useAuthGuard();
   const { cartTotal, cartItems, clearCart } = useCart();
   const [step, setStep] = useState<CheckoutStep>('shipping');
   const [orderNumber, setOrderNumber] = useState('');
@@ -25,6 +28,14 @@ export default function CheckoutPage() {
     pincode: '',
     country: 'India',
   });
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <Spinner className="size-8" />
+      </main>
+    );
+  }
 
   const tax = cartTotal * 0.18;
   const shipping = 500;

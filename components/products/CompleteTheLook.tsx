@@ -1,16 +1,26 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { products } from '@/data/products';
+import { getProducts, Product } from '@/lib/api/products';
 
 export default function CompleteTheLook({ category }: { category?: string }) {
-  // Get complementary products
-  const complementary = products
-    .filter(p => p.category !== category)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 4);
+  const [complementary, setComplementary] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getProducts({ pageSize: 20 }).then((res) => {
+      if (cancelled) return;
+      const picks = res.data.products
+        .filter((p) => p.category !== category)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 4);
+      setComplementary(picks);
+    });
+    return () => { cancelled = true; };
+  }, [category]);
 
   const containerVariants = {
     hidden: { opacity: 0 },

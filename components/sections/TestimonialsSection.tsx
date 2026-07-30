@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
-import { testimonials } from '@/data/products';
+import { testimonials } from '@/data/content';
 
 export default function TestimonialsSection() {
   const containerVariants = {

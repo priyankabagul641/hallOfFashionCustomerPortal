@@ -1,14 +1,22 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/products/ProductCard';
 import FilterSidebar, { FilterState } from '@/components/products/FilterSidebar';
-import { products as allProducts } from '@/data/products';
+import { getAllProducts, Product } from '@/lib/api/products';
+import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
+import ProductLoadError from '@/components/products/ProductLoadError';
 import { SlidersHorizontal, Grid3X3, List, X, Search } from 'lucide-react';
 
-export default function ShopPage() {
+function ShopPageInner() {
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get('category') ?? undefined;
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -16,7 +24,7 @@ export default function ShopPage() {
   const productsSectionRef = useRef<HTMLDivElement | null>(null);
   const initialRenderRef = useRef(true);
   const [filters, setFilters] = useState<FilterState>({
-    categories: [],
+    categories: initialCategory ? [initialCategory] : [],
     designers: [],
     fabrics: [],
     occasions: [],
@@ -24,6 +32,22 @@ export default function ShopPage() {
     priceMin: 0,
     priceMax: 150000,
   });
+
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAllProducts()
+      .then((products) => { if (!cancelled) { setAllProducts(products); setError(null); } })
+      .catch(() => { if (!cancelled) setError('Failed to load products. Please refresh.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [reloadKey]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setReloadKey((k) => k + 1);
+  };
 
   useEffect(() => {
     if (mobileFiltersOpen) {
@@ -69,18 +93,18 @@ export default function ShopPage() {
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.designer.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.tags?.some((t) => t.toLowerCase().includes(q))
+          p.category.toLowerCase().includes(q)
       );
     }
 
-    // Category
+    // Category — filter values are real category names (from getCategories()),
+    // so match exactly rather than substring, which the old hardcoded slug
+    // set relied on.
     if (filters.categories.length > 0) {
+      const selected = filters.categories.map((c) => c.toLowerCase());
       result = result.filter((p) =>
-        filters.categories.some((c) =>
-          p.category?.toLowerCase().includes(c) ||
-          p.subcategory?.toLowerCase().includes(c)
-        )
+        selected.includes(p.category?.toLowerCase() ?? '') ||
+        selected.includes(p.subcategory?.toLowerCase() ?? '')
       );
     }
 
@@ -91,19 +115,8 @@ export default function ShopPage() {
       );
     }
 
-    // Fabric
-    if (filters.fabrics.length > 0) {
-      result = result.filter((p) =>
-        filters.fabrics.some((f) => p.fabricDetails?.toLowerCase().includes(f))
-      );
-    }
-
-    // Occasion
-    if (filters.occasions.length > 0) {
-      result = result.filter((p) =>
-        filters.occasions.some((o) => p.occasion?.toLowerCase().includes(o))
-      );
-    }
+    // Fabric/occasion filters need product detail fields not present on the
+    // public list endpoint; skipped until backend list DTO carries them.
 
     // Rating
     if (filters.ratings.length > 0) {
@@ -125,7 +138,7 @@ export default function ShopPage() {
     }
 
     return result;
-  }, [filters, sortBy, searchQuery]);
+  }, [allProducts, filters, sortBy, searchQuery]);
 
   const activeFilterCount =
     filters.categories.length +
@@ -172,7 +185,7 @@ export default function ShopPage() {
           {/* Sidebar — Desktop */}
           <aside className="hidden lg:block w-72 shrink-0 self-start">
             <div className="lg:sticky lg:top-24">
-              <FilterSidebar onFiltersChange={handleFiltersChange} totalResults={filteredProducts.length} />
+              <FilterSidebar onFiltersChange={handleFiltersChange} totalResults={filteredProducts.length} initialCategory={initialCategory} />
             </div>
           </aside>
 
@@ -236,7 +249,11 @@ export default function ShopPage() {
             </div>
 
             {/* Products Grid / List */}
-            {filteredProducts.length === 0 ? (
+            {loading && allProducts.length === 0 ? (
+              <ProductGridSkeleton />
+            ) : error && allProducts.length === 0 ? (
+              <ProductLoadError message={error} onRetry={handleRetry} />
+            ) : filteredProducts.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -312,7 +329,7 @@ export default function ShopPage() {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-                <FilterSidebar onFiltersChange={handleFiltersChange} totalResults={filteredProducts.length} />
+                <FilterSidebar onFiltersChange={handleFiltersChange} totalResults={filteredProducts.length} initialCategory={initialCategory} />
               </div>
               <div className="sticky bottom-0 p-4 bg-background border-t border-border">
                 <button
@@ -329,5 +346,13 @@ export default function ShopPage() {
 
       <Footer />
     </main>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={<ProductGridSkeleton />}>
+      <ShopPageInner />
+    </Suspense>
   );
 }

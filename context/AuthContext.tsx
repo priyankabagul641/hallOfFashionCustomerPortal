@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { apiGet, apiPost, storeSession, clearSession, ApiError } from '@/lib/api-client';
 
 interface User {
   id: string;
@@ -14,6 +15,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  error: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, phone: string, password: string) => Promise<void>;
   logout: () => void;
@@ -23,126 +25,140 @@ interface AuthContextType {
   resetPassword: (token: string, newPassword: string) => Promise<void>;
 }
 
-// Static mock users for demo (no API required)
-const MOCK_USERS: (User & { password: string })[] = [
-  {
-    id: 'user_1',
-    email: 'demo@halloffashion.com',
-    password: 'demo123',
-    name: 'Rahul Sharma',
-    phone: '+91 98765 43210',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
-  },
-  {
-    id: 'user_2',
-    email: 'prj200597@gmail.com',
-    password: 'admin123',
-    name: 'Priyanka',
-    phone: '+91 99887 76655',
-    avatar: 'https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=100&q=80',
-  },
-];
+interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
 
-const STORAGE_KEY = 'hof_user';
+interface MeResponse {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function toUser(u: MeResponse): User {
+  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar };
+}
+
+function errorMessage(err: unknown): string {
+  const apiErr = err as ApiError;
+  return apiErr?.message ?? 'Something went wrong. Please try again.';
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Restore session from localStorage on mount
+  // Hydrate session from backend on mount (token lives in sessionStorage via api-client)
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setUser(JSON.parse(stored));
-      }
-    } catch {
-      // ignore
-    } finally {
-      setIsLoading(false);
-    }
+    apiGet<MeResponse>('/auth/me')
+      .then((res) => setUser(toUser(res.data)))
+      .catch(() => setUser(null))
+      .finally(() => setIsLoading(false));
   }, []);
-
-  const persistUser = (u: User) => {
-    setUser(u);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-  };
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
+    setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 800)); // simulate network
-      const found = MOCK_USERS.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-      );
-      if (!found) throw new Error('Invalid email or password. Try demo@halloffashion.com / demo123');
-      const { password: _, ...safeUser } = found;
-      persistUser(safeUser);
+      const res = await apiPost<AuthTokens & { user: MeResponse }>('/auth/login', { email, password });
+      storeSession(res.data.accessToken, res.data.refreshToken);
+      setUser(toUser(res.data.user));
+    } catch (err) {
+      setError(errorMessage(err));
+      throw err;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const signup = useCallback(async (name: string, email: string, phone: string, _password: string) => {
+  const signup = useCallback(async (name: string, email: string, phone: string, password: string) => {
     setIsLoading(true);
+    setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 1000));
-      const newUser: User = {
-        id: `user_${Date.now()}`,
+      const [firstName, ...rest] = name.trim().split(' ');
+      const lastName = rest.join(' ');
+      const res = await apiPost<AuthTokens & { user: MeResponse }>('/auth/register', {
         email,
-        name,
         phone,
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
-      };
-      persistUser(newUser);
+        firstName,
+        lastName,
+        password,
+        role: 'customer',
+      });
+      storeSession(res.data.accessToken, res.data.refreshToken);
+      setUser(toUser(res.data.user));
+    } catch (err) {
+      setError(errorMessage(err));
+      throw err;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   const logout = useCallback(() => {
+    clearSession();
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
   }, []);
 
-  const sendOTP = useCallback(async (_phone: string) => {
-    await new Promise((r) => setTimeout(r, 600));
-    return { otpId: 'mock_otp_' + Date.now() };
-  }, []);
-
-  const verifyOTP = useCallback(async (_otpId: string, otp: string) => {
-    setIsLoading(true);
+  const sendOTP = useCallback(async (phone: string) => {
+    setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 800));
-      // Accept any 6-digit OTP for demo
-      if (otp.length !== 6) throw new Error('Invalid OTP. Enter any 6 digits for demo.');
-      const demoUser: User = {
-        id: 'user_otp',
-        email: 'otp@halloffashion.com',
-        name: 'OTP User',
-        phone: 'verified',
-      };
-      persistUser(demoUser);
+      await apiPost('/auth/otp/send', { phone });
+      return { otpId: phone };
+    } catch (err) {
+      setError(errorMessage(err));
+      throw err;
+    }
+  }, []);
+
+  const verifyOTP = useCallback(async (otpId: string, otp: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await apiPost<AuthTokens & { user: MeResponse }>('/auth/otp/verify', {
+        phone: otpId,
+        otp,
+      });
+      storeSession(res.data.accessToken, res.data.refreshToken);
+      setUser(toUser(res.data.user));
+    } catch (err) {
+      setError(errorMessage(err));
+      throw err;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const forgotPassword = useCallback(async (_email: string) => {
-    await new Promise((r) => setTimeout(r, 800));
-    // In demo mode, always succeed
+  const forgotPassword = useCallback(async (email: string) => {
+    setError(null);
+    try {
+      await apiPost('/auth/forgot-password', { email });
+    } catch (err) {
+      setError(errorMessage(err));
+      throw err;
+    }
   }, []);
 
-  const resetPassword = useCallback(async (_token: string, _newPassword: string) => {
-    await new Promise((r) => setTimeout(r, 800));
+  const resetPassword = useCallback(async (token: string, newPassword: string) => {
+    setError(null);
+    try {
+      await apiPost('/auth/reset-password', { token, newPassword, confirmPassword: newPassword });
+    } catch (err) {
+      setError(errorMessage(err));
+      throw err;
+    }
   }, []);
 
   const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated: !!user,
+    error,
     login,
     signup,
     logout,

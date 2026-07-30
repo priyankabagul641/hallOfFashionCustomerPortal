@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { Spinner } from '@/components/ui/spinner';
 import { orders, Order } from '@/data/orders';
 import {
   Package, Clock, CheckCircle, Truck, MapPin,
@@ -23,8 +25,17 @@ const statusConfig: Record<Order['status'], { color: string; bg: string; icon: t
 };
 
 export default function OrdersPage() {
+  const { isLoading } = useAuthGuard();
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'delivered'>('all');
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <Spinner className="size-8" />
+      </main>
+    );
+  }
 
   const filtered = orders.filter((o) => {
     if (activeFilter === 'active') return !['Delivered', 'Cancelled', 'Returned'].includes(o.status);

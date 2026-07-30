@@ -6,18 +6,27 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { products } from '@/data/products';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { Spinner } from '@/components/ui/spinner';
 import { Heart, ShoppingBag, ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function WishlistPage() {
   const router = useRouter();
+  const { isLoading } = useAuthGuard();
   const { wishlistItems, removeFromWishlist, addToCart } = useCart();
 
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <Spinner className="size-8" />
+      </main>
+    );
+  }
+
   const handleMoveToCart = (item: typeof wishlistItems[0]) => {
-    // Find the full product to get sizes
-    const fullProduct = products.find(p => p.id === item.id);
-    const defaultSize = fullProduct?.sizes[0] || 'M';
+    // ponytail: sizes aren't on the public product payload yet, default to M.
+    const defaultSize = 'M';
 
     addToCart({
       id: item.id,

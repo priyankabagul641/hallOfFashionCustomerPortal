@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
-import { blogPosts } from '@/data/products';
+import { blogPosts } from '@/data/content';
 import { ArrowRight } from 'lucide-react';
 
 export default function BlogPage() {

@@ -1,20 +1,24 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/products/ProductCard';
-import { products } from '@/data/products';
+import { getAllProducts, Product } from '@/lib/api/products';
+import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
+import ProductLoadError from '@/components/products/ProductLoadError';
 import { ChevronLeft, Tag } from 'lucide-react';
 
-// Map every slug used across the codebase to a display config
+// Map every slug used across the codebase to a display config.
+// matchFn only reads category/subcategory — occasion/tags aren't returned by
+// the public product-list endpoint (only on the detail endpoint).
 const COLLECTION_MAP: Record<string, {
   title: string;
   subtitle: string;
   description: string;
   banner: string;
-  matchFn: (p: (typeof products)[0]) => boolean;
+  matchFn: (p: Product) => boolean;
 }> = {
   // numeric ids from CollectionsGrid
   '1': {
@@ -86,14 +90,14 @@ const COLLECTION_MAP: Record<string, {
     subtitle: 'Celebrate in Style',
     description: 'Vibrant, richly embellished outfits designed for Diwali, Eid, Navratri, and all festive celebrations. Colour, craft, and joy.',
     banner: '/products/Festive-collection.png',
-    matchFn: (p) => p.occasion?.toLowerCase().includes('festive') || p.tags?.some((t) => t.toLowerCase().includes('festive')),
+    matchFn: (p) => p.category?.toLowerCase().includes('festive') || p.subcategory?.toLowerCase().includes('festive'),
   },
   'groom': {
     title: 'Groom Collection',
     subtitle: 'Your Perfect Wedding Look',
     description: 'Curated exclusively for the groom. Statement sherwanis, bespoke suits, and timeless Indo-western sets to make your wedding day unforgettable.',
     banner: '/products/groom-collection-3.png',
-    matchFn: (p) => p.occasion?.toLowerCase().includes('wedding') || p.tags?.some((t) => t.toLowerCase().includes('wedding') || t.toLowerCase().includes('groom')),
+    matchFn: (p) => p.category?.toLowerCase().includes('groom') || p.subcategory?.toLowerCase().includes('groom') || p.subcategory?.toLowerCase().includes('sherwani'),
   },
   'accessories': {
     title: 'Accessories',
@@ -115,6 +119,25 @@ const FALLBACK = {
 export default function CollectionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const config = COLLECTION_MAP[id] ?? FALLBACK;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAllProducts()
+      .then((products) => { if (!cancelled) { setProducts(products); setError(null); } })
+      .catch(() => { if (!cancelled) setError('Failed to load products. Please refresh.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [reloadKey]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setReloadKey((k) => k + 1);
+  };
+
   const collectionProducts = products.filter(config.matchFn);
   // Fallback: show all products if no matches (e.g. unknown slug)
   const displayProducts = collectionProducts.length > 0 ? collectionProducts : products;
@@ -157,7 +180,11 @@ export default function CollectionPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Grid */}
-          {displayProducts.length === 0 ? (
+          {loading && products.length === 0 ? (
+            <ProductGridSkeleton />
+          ) : error && products.length === 0 ? (
+            <ProductLoadError message={error} onRetry={handleRetry} />
+          ) : displayProducts.length === 0 ? (
             <div className="text-center py-24">
               <p className="font-playfair text-xl font-semibold mb-2">No products found</p>
               <p className="text-muted-foreground text-sm mb-6">Check back soon for new arrivals</p>

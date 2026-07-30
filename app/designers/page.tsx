@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
-import { designers } from '@/data/products';
+import { designers } from '@/data/content';
 
 const containerVariants = {
   hidden: { opacity: 0 },

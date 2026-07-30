@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, X, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { getCategories } from '@/lib/api/products';
 
 export interface FilterState {
   categories: string[];
@@ -17,21 +18,13 @@ export interface FilterState {
 interface FilterSidebarProps {
   onFiltersChange: (filters: FilterState) => void;
   totalResults: number;
+  initialCategory?: string;
 }
 
-const FILTER_SECTIONS = [
-  {
-    id: 'categories',
-    label: 'Category',
-    options: [
-      { label: 'Sherwanis', value: 'sherwanis' },
-      { label: 'Kurtas', value: 'kurtas' },
-      { label: 'Indo-Western', value: 'indo-western' },
-      { label: 'Blazers & Suits', value: 'blazers' },
-      { label: 'Waistcoats', value: 'waistcoats' },
-      { label: 'Accessories', value: 'accessories' },
-    ],
-  },
+// Category options come from the live categories API (see effect below) —
+// options must be real category names since the public product list only
+// filters by exact category-name match, not a hardcoded slug set.
+const STATIC_FILTER_SECTIONS = [
   {
     id: 'designers',
     label: 'Designer',
@@ -44,29 +37,10 @@ const FILTER_SECTIONS = [
       { label: 'The Ivory Thread', value: 'ivory-thread' },
     ],
   },
-  {
-    id: 'fabrics',
-    label: 'Fabric',
-    options: [
-      { label: 'Pure Silk', value: 'silk' },
-      { label: 'Velvet', value: 'velvet' },
-      { label: 'Cotton', value: 'cotton' },
-      { label: 'Brocade', value: 'brocade' },
-      { label: 'Georgette', value: 'georgette' },
-      { label: 'Linen', value: 'linen' },
-    ],
-  },
-  {
-    id: 'occasions',
-    label: 'Occasion',
-    options: [
-      { label: 'Wedding', value: 'wedding' },
-      { label: 'Festive', value: 'festive' },
-      { label: 'Formal', value: 'formal' },
-      { label: 'Casual', value: 'casual' },
-      { label: 'Party', value: 'party' },
-    ],
-  },
+  // ponytail: fabric/occasion sections removed — the public product list
+  // endpoint doesn't return those fields (only product detail does), so
+  // filtering on them silently matched nothing. Re-add once /products/public
+  // includes fabricDetails/occasion, or filter server-side.
 ];
 
 const PRICE_MIN = 0;
@@ -82,11 +56,28 @@ const DEFAULT_FILTERS: FilterState = {
   priceMax: PRICE_MAX,
 };
 
-export default function FilterSidebar({ onFiltersChange, totalResults }: FilterSidebarProps) {
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+export default function FilterSidebar({ onFiltersChange, totalResults, initialCategory }: FilterSidebarProps) {
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    ...DEFAULT_FILTERS,
+    categories: initialCategory ? [initialCategory] : [],
+  }));
   const [expanded, setExpanded] = useState<string[]>(['categories', 'designers']);
   const [priceInputMin, setPriceInputMin] = useState('');
   const [priceInputMax, setPriceInputMax] = useState('');
+  const [categoryOptions, setCategoryOptions] = useState<{ label: string; value: string }[]>([]);
+
+  useEffect(() => {
+    getCategories()
+      .then((res) => {
+        setCategoryOptions(res.data.categories.map((c) => ({ label: c.name, value: c.name })));
+      })
+      .catch(() => setCategoryOptions([]));
+  }, []);
+
+  const FILTER_SECTIONS = useMemo(
+    () => [{ id: 'categories', label: 'Category', options: categoryOptions }, ...STATIC_FILTER_SECTIONS],
+    [categoryOptions]
+  );
 
   // Emit changes upstream
   useEffect(() => {

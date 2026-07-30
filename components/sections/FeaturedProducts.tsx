@@ -1,23 +1,16 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Heart, ShoppingBag } from 'lucide-react';
-import { products as allProducts } from '@/data/products';
+import { getProducts, Product } from '@/lib/api/products';
+import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
+import ProductLoadError from '@/components/products/ProductLoadError';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
-
-// Get featured products - those with highest ratings and discounts
-const getFeaturedProducts = () => {
-  return allProducts
-    .filter(p => p.discountPrice && p.reviews > 20)
-    .sort((a, b) => (b.reviews || 0) - (a.reviews || 0))
-    .slice(0, 4);
-};
-
-const products = getFeaturedProducts();
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -42,8 +35,26 @@ const productVariants = {
 export default function FeaturedProducts() {
   const router = useRouter();
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const handleWishlistToggle = (e: React.MouseEvent, product: typeof products[0]) => {
+  useEffect(() => {
+    let cancelled = false;
+    getProducts({ sortBy: 'rating', pageSize: 4 })
+      .then((res) => { if (!cancelled) { setProducts(res.data.products); setError(null); } })
+      .catch(() => { if (!cancelled) setError('Failed to load products. Please refresh.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [reloadKey]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setReloadKey((k) => k + 1);
+  };
+
+  const handleWishlistToggle = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -54,7 +65,7 @@ export default function FeaturedProducts() {
       addToWishlist({
         id: product.id,
         name: product.name,
-        price: product.discountPrice || product.price,
+        price: product.price,
         image: product.images[0],
         designer: product.designer,
       });
@@ -67,16 +78,16 @@ export default function FeaturedProducts() {
     }
   };
 
-  const handleQuickAddToCart = (e: React.MouseEvent, product: typeof products[0]) => {
+  const handleQuickAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const defaultSize = product.sizes[0] || 'M';
+    const defaultSize = 'M';
 
     addToCart({
       id: product.id,
       name: product.name,
-      price: product.discountPrice || product.price,
+      price: product.price,
       quantity: 1,
       image: product.images[0],
       size: defaultSize,
@@ -115,6 +126,13 @@ export default function FeaturedProducts() {
         </motion.div>
 
         {/* Products Grid */}
+        {loading && products.length === 0 ? (
+          <ProductGridSkeleton count={4} />
+        ) : error && products.length === 0 ? (
+          <ProductLoadError message={error} onRetry={handleRetry} />
+        ) : products.length === 0 ? (
+          <p className="text-center text-muted-foreground py-16">No products found</p>
+        ) : (
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -137,13 +155,6 @@ export default function FeaturedProducts() {
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-700"
                     />
-
-                    {/* Featured Badge */}
-                    {product.discountPrice && (
-                      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                        {Math.round(((product.price - product.discountPrice) / product.price) * 100)}% OFF
-                      </div>
-                    )}
 
                     {/* Overlay Actions */}
                     <motion.div
@@ -189,13 +200,8 @@ export default function FeaturedProducts() {
                     </h3>
                     <div className="flex items-center gap-2">
                       <p className="text-accent font-semibold">
-                        ₹{product.discountPrice ? product.discountPrice.toLocaleString('en-IN') : product.price.toLocaleString('en-IN')}
+                        ₹{product.price.toLocaleString('en-IN')}
                       </p>
-                      {product.discountPrice && (
-                        <p className="text-sm text-muted-foreground line-through">
-                          ₹{product.price.toLocaleString('en-IN')}
-                        </p>
-                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -203,6 +209,7 @@ export default function FeaturedProducts() {
             </motion.div>
           ))}
         </motion.div>
+        )}
 
         {/* View All CTA */}
         <motion.div

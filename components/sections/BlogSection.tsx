@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Calendar, User } from 'lucide-react';
-import { blogPosts } from '@/data/products';
+import { blogPosts } from '@/data/content';
 
 export default function BlogSection() {
   const containerVariants = {

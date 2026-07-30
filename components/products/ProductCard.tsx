@@ -18,8 +18,8 @@ interface ProductCardProps {
     designer: string;
     rating: number;
     reviews: number;
-    stock: number;
-    sizes: string[];
+    stock?: number;
+    sizes?: string[];
   };
 }
 
@@ -57,7 +57,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
 
     // Add with first available size
-    const defaultSize = product.sizes[0] || 'M';
+    const defaultSize = product.sizes?.[0] || 'M';
     
     addToCart({
       id: product.id,
@@ -178,7 +178,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </p>
               )}
             </div>
-            {product.stock < 5 && product.stock > 0 && (
+            {product.stock !== undefined && product.stock < 5 && product.stock > 0 && (
               <p className="text-xs text-orange-600 font-semibold">
                 Only {product.stock} left in stock
               </p>
