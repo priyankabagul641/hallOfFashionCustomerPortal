@@ -1,18 +1,31 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useBanners } from '@/hooks/use-banners';
+import { resolveBannerHref } from '@/lib/banner-link';
 
 export default function CinematicBanner() {
   const { banners, loading, error, recordImpression, recordClick } = useBanners('homepage', 'promotion');
   const banner = banners[0];
+  const [href, setHref] = useState<string | null>(null);
 
   useEffect(() => {
     if (banner) recordImpression(banner.id).catch(() => {});
   }, [banner, recordImpression]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!banner) return;
+    resolveBannerHref(banner).then((h) => {
+      if (!cancelled) setHref(h);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [banner]);
 
   if (loading || error || !banner) return null;
 
@@ -26,6 +39,14 @@ export default function CinematicBanner() {
           viewport={{ once: true, margin: '-100px' }}
           className="relative h-96 md:h-[500px] rounded-2xl overflow-hidden shadow-premium-lg"
         >
+          {href && (
+            <Link
+              href={href}
+              onClick={() => recordClick(banner.id).catch(() => {})}
+              className="absolute inset-0 z-0 block"
+              aria-label={banner.bannerTitle}
+            />
+          )}
           {/* Background Image */}
           <Image
             src={banner.desktopImageUrl}
@@ -52,7 +73,7 @@ export default function CinematicBanner() {
           />
 
           {/* Content */}
-          <div className="relative h-full flex items-center justify-start px-8 md:px-16">
+          <div className="relative z-10 h-full flex items-center justify-start px-8 md:px-16">
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -98,24 +119,19 @@ export default function CinematicBanner() {
               )}
 
               {/* CTA */}
-              {banner.ctaLabel && banner.clickActionTarget && (
+              {banner.ctaLabel && href && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.3 }}
                 >
-                  <Link
-                    href={banner.clickActionTarget}
-                    onClick={() => recordClick(banner.id).catch(() => {})}
+                  <motion.button
+                    whileHover={{ scale: 1.05, backgroundColor: '#D8C3A5' }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-10 py-4 bg-accent text-luxury-black font-bold rounded-lg transition-all duration-300 hover:shadow-premium"
                   >
-                    <motion.button
-                      whileHover={{ scale: 1.05, backgroundColor: '#D8C3A5' }}
-                      whileTap={{ scale: 0.95 }}
-                      className="px-10 py-4 bg-accent text-luxury-black font-bold rounded-lg transition-all duration-300 hover:shadow-premium"
-                    >
-                      {banner.ctaLabel}
-                    </motion.button>
-                  </Link>
+                    {banner.ctaLabel}
+                  </motion.button>
                 </motion.div>
               )}
             </motion.div>
