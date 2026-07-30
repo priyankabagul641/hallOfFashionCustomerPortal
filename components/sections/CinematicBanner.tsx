@@ -1,10 +1,21 @@
 'use client';
 
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useBanners } from '@/hooks/use-banners';
 
 export default function CinematicBanner() {
+  const { banners, loading, error, recordImpression, recordClick } = useBanners('homepage', 'promotion');
+  const banner = banners[0];
+
+  useEffect(() => {
+    if (banner) recordImpression(banner.id).catch(() => {});
+  }, [banner, recordImpression]);
+
+  if (loading || error || !banner) return null;
+
   return (
     <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-background overflow-hidden">
       <div className="max-w-7xl mx-auto">
@@ -17,8 +28,8 @@ export default function CinematicBanner() {
         >
           {/* Background Image */}
           <Image
-            src="products/groom-collection-2.png"
-            alt="Men's Heritage Collection"
+            src={banner.desktopImageUrl}
+            alt={banner.bannerTitle}
             fill
             className="object-cover"
             quality={85}
@@ -71,35 +82,42 @@ export default function CinematicBanner() {
                 transition={{ duration: 0.8, delay: 0.1 }}
                 className="text-4xl md:text-5xl font-playfair font-bold text-white mb-4 leading-tight"
               >
-                Groom Collection
+                {banner.bannerTitle}
               </motion.h2>
 
               {/* Description */}
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-white/80 text-lg mb-8 font-light"
-              >
-                Handcrafted sherwanis and Indo-western attire for your special day
-              </motion.p>
+              {banner.subtitle && (
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="text-white/80 text-lg mb-8 font-light"
+                >
+                  {banner.subtitle}
+                </motion.p>
+              )}
 
               {/* CTA */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-              >
-                <Link href="/collection/groom">
-                  <motion.button
-                    whileHover={{ scale: 1.05, backgroundColor: '#D8C3A5' }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-10 py-4 bg-accent text-luxury-black font-bold rounded-lg transition-all duration-300 hover:shadow-premium"
+              {banner.ctaLabel && banner.clickActionTarget && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.3 }}
+                >
+                  <Link
+                    href={banner.clickActionTarget}
+                    onClick={() => recordClick(banner.id).catch(() => {})}
                   >
-                    Explore Groom Wear
-                  </motion.button>
-                </Link>
-              </motion.div>
+                    <motion.button
+                      whileHover={{ scale: 1.05, backgroundColor: '#D8C3A5' }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-10 py-4 bg-accent text-luxury-black font-bold rounded-lg transition-all duration-300 hover:shadow-premium"
+                    >
+                      {banner.ctaLabel}
+                    </motion.button>
+                  </Link>
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </motion.div>

@@ -11,7 +11,7 @@ type SignupStep = 'form' | 'otp' | 'complete';
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup, sendOTP, verifyOTP, isLoading } = useAuth();
+  const { sendOTP, verifyOTP, isLoading } = useAuth();
   const [step, setStep] = useState<SignupStep>('form');
   const [formData, setFormData] = useState({
     name: '',

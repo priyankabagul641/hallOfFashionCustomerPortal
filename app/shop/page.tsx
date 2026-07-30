@@ -142,7 +142,7 @@ export default function ShopPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
             <p className="text-accent font-cormorant text-base tracking-widest uppercase mb-1">Explore</p>
-            <h1 className="font-playfair text-4xl md:text-5xl font-bold mb-2">Men's Collection</h1>
+            <h1 className="font-playfair text-4xl md:text-5xl font-bold mb-2">Men&apos;s Collection</h1>
             <p className="text-muted-foreground">
               {allProducts.length} premium pieces — sherwanis, kurtas, indo-western & more
             </p>

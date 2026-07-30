@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
@@ -9,7 +9,7 @@ import {
   productTypes, fabrics, neckDesigns, sleeveDesigns,
   backDesigns, additionalFeatures, colors
 } from '@/data/customization';
-import { Check, ChevronRight, ChevronLeft, Upload, Ruler, ShoppingBag, Eye, Scissors, Star, X } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Upload, Ruler, ShoppingBag, Eye, Scissors, Star } from 'lucide-react';
 
 interface CustomizationState {
   productType: string;

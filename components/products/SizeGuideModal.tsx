@@ -71,7 +71,7 @@ export default function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps)
 
               {/* Size Chart */}
               <div className="space-y-4">
-                <h3 className="font-playfair text-xl font-semibold">Women's Size Chart</h3>
+                <h3 className="font-playfair text-xl font-semibold">Women&apos;s Size Chart</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>

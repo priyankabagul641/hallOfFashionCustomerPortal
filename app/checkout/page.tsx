@@ -283,7 +283,7 @@ export default function CheckoutPage() {
                       Order Confirmed!
                     </h2>
                     <p className="text-muted-foreground text-lg">
-                      Thank you for your purchase. Your order number is <span className="font-bold text-foreground">#{orderNumber || `HOF-${Date.now().toString().slice(-8)}`}</span>
+                      Thank you for your purchase. Your order number is <span className="font-bold text-foreground">#{orderNumber}</span>
                     </p>
                   </div>
                   <Link href="/">

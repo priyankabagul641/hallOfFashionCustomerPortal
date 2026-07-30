@@ -80,7 +80,7 @@ export default function NotificationsPage() {
             ] as [string, string][]).map(([filter, label]) => (
               <button
                 key={filter}
-                onClick={() => setActiveFilter(filter as any)}
+                onClick={() => setActiveFilter(filter as 'all' | 'unread' | Notification['type'])}
                 className={`px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
                   activeFilter === filter
                     ? 'border-accent text-accent'
@@ -101,14 +101,13 @@ export default function NotificationsPage() {
             <div className="text-center py-24">
               <BellOff className="mx-auto mb-4 text-muted-foreground" size={48} />
               <p className="font-playfair text-xl font-semibold mb-2">No notifications</p>
-              <p className="text-muted-foreground text-sm">You're all caught up!</p>
+              <p className="text-muted-foreground text-sm">You&apos;re all caught up!</p>
             </div>
           )}
 
           <div className="space-y-3">
             {filtered.map((notification, idx) => {
               const config = typeConfig[notification.type];
-              const TypeIcon = config.icon;
 
               return (
                 <motion.div

@@ -36,7 +36,7 @@ export function ScrollReveal({ children, delay = 0, className = '' }: ScrollReve
       ref={ref}
       initial={{ opacity: 0, y: 50 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-      transition={{ duration: 0.8, delay, ease: 'easeOut' }}
+      transition={{ duration: 0.8, delay }}
       className={className}
     >
       {children}
@@ -71,7 +71,7 @@ export function FadeInUp({ children, delay = 0, className = '' }: ScrollRevealPr
       ref={ref}
       initial={{ opacity: 0, y: 80 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 80 }}
-      transition={{ duration: 1, delay, ease: 'easeOut' }}
+      transition={{ duration: 1, delay }}
       className={className}
     >
       {children}
@@ -132,7 +132,7 @@ export function StaggerItem({ children, className = '' }: { children: ReactNode;
         visible: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.6, ease: 'easeOut' },
+          transition: { duration: 0.6 },
         },
       }}
       className={className}

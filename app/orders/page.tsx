@@ -6,8 +6,8 @@ import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { orders, Order } from '@/data/orders';
 import {
-  Package, Clock, CheckCircle, Truck, MapPin, ChevronRight,
-  ChevronDown, ChevronUp, RotateCcw, Star, ShoppingBag, Filter, X
+  Package, Clock, CheckCircle, Truck, MapPin,
+  ChevronDown, ChevronUp, RotateCcw, Star, ShoppingBag, X
 } from 'lucide-react';
 
 const statusConfig: Record<Order['status'], { color: string; bg: string; icon: typeof Package }> = {

@@ -11,15 +11,9 @@ const nextConfig = {
   // server-side rewrite rules.
   trailingSlash: true,
 
-  // ─── TypeScript / ESLint ─────────────────────────────────────────────────────
+  // ─── TypeScript ──────────────────────────────────────────────────────────────
   typescript: {
-    // Already present: skips type errors that would abort the export build.
-    ignoreBuildErrors: true,
-  },
-
-  eslint: {
-    // Prevents ESLint warnings from aborting the export build.
-    ignoreDuringBuilds: true,
+    ignoreBuildErrors: false,
   },
 
   // ─── Images ──────────────────────────────────────────────────────────────────

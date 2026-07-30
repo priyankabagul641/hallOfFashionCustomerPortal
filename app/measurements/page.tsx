@@ -153,7 +153,7 @@ export default function MeasurementsPage() {
                       </div>
                       {profile.notes && (
                         <p className="text-xs text-muted-foreground mt-4 bg-muted/20 rounded-xl p-3 italic">
-                          "{profile.notes}"
+                          &ldquo;{profile.notes}&rdquo;
                         </p>
                       )}
                       <div className="mt-4 pt-4 border-t border-border flex gap-3">

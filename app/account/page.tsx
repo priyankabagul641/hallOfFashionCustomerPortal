@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import Footer from '@/components/layout/Footer';
-import { User, ShoppingBag, Heart, MapPin, Settings, LogOut, Package, Award } from 'lucide-react';
+import { User, ShoppingBag, Heart, MapPin, Settings, LogOut, Package, Award, LucideIcon } from 'lucide-react';
 import { loadStoredOrders } from '@/lib/order-history';
 import { Order } from '@/data/orders';
 
@@ -14,11 +14,7 @@ type ActiveTab = 'profile' | 'orders' | 'wishlist' | 'addresses' | 'settings';
 export default function AccountPage() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
-  const [orders, setOrders] = useState<Order[]>([]);
-
-  useEffect(() => {
-    setOrders(loadStoredOrders());
-  }, []);
+  const [orders] = useState<Order[]>(() => loadStoredOrders());
 
   if (!user) {
     return (
@@ -43,7 +39,7 @@ export default function AccountPage() {
     );
   }
 
-  const tabs: { id: ActiveTab; label: string; icon: any }[] = [
+  const tabs: { id: ActiveTab; label: string; icon: LucideIcon }[] = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'wishlist', label: 'Wishlist', icon: Heart },

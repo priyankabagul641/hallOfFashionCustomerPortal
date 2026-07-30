@@ -200,7 +200,7 @@ export default function Navbar() {
                       initial={{ opacity: 0, y: 6, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      transition={{ duration: 0.18 }}
                       onMouseEnter={() => openMenu(item.key)}
                       onMouseLeave={closeMenu}
                       className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50"

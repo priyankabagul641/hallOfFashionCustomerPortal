@@ -129,7 +129,7 @@ export default function SupportPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center gap-3 mb-3">
               <MessageCircle className="text-accent" size={24} />
-              <span className="text-accent font-cormorant text-lg tracking-widest uppercase">We're Here to Help</span>
+              <span className="text-accent font-cormorant text-lg tracking-widest uppercase">We&apos;re Here to Help</span>
             </div>
             <h1 className="font-playfair text-4xl md:text-5xl font-bold mb-3">
               Customer <span className="text-accent">Support</span>

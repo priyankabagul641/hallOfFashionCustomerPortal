@@ -83,13 +83,13 @@ export default function DesignersPage() {
                   >
                     <div>
                       <span className="inline-block text-accent text-sm font-medium tracking-widest uppercase mb-4">
-                        {designer.category}
+                        {designer.location}
                       </span>
                       <h2 className="text-4xl md:text-5xl font-playfair font-bold mb-4">
                         {designer.name}
                       </h2>
                       <p className="text-lg text-muted-foreground font-light leading-relaxed mb-6">
-                        {designer.bio}
+                        {designer.description}
                       </p>
                     </div>
 
