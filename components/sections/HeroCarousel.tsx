@@ -180,7 +180,7 @@ drop-shadow-[0_4px_15px_rgba(0,0,0,0.9)]
             </motion.p>
           )}
 
-          {banner.ctaLabel && href && (
+          {href && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -207,7 +207,7 @@ text-lg
 shadow-[0_15px_40px_rgba(0,0,0,0.35)]
 "
               >
-                {banner.ctaLabel}
+                {banner.ctaLabel || 'Shop Now'}
               </motion.button>
             </motion.div>
           )}

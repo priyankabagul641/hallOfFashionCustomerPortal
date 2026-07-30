@@ -119,19 +119,22 @@ export default function CinematicBanner() {
               )}
 
               {/* CTA */}
-              {banner.ctaLabel && href && (
+              {href && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.3 }}
+                  className="relative z-10"
                 >
-                  <motion.button
-                    whileHover={{ scale: 1.05, backgroundColor: '#D8C3A5' }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-10 py-4 bg-accent text-luxury-black font-bold rounded-lg transition-all duration-300 hover:shadow-premium"
-                  >
-                    {banner.ctaLabel}
-                  </motion.button>
+                  <Link href={href} onClick={() => recordClick(banner.id).catch(() => {})}>
+                    <motion.button
+                      whileHover={{ scale: 1.05, backgroundColor: '#D8C3A5' }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-10 py-4 bg-accent text-luxury-black font-bold rounded-lg transition-all duration-300 hover:shadow-premium"
+                    >
+                      {banner.ctaLabel || 'Shop Now'}
+                    </motion.button>
+                  </Link>
                 </motion.div>
               )}
             </motion.div>
