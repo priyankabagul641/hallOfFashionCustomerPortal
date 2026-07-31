@@ -12,10 +12,16 @@ export interface ApiResponse<T> {
   message: string;
 }
 
-export interface ApiError {
+export class ApiError extends Error {
   status: number;
-  message: string;
   errors?: Record<string, string>;
+
+  constructor(message: string, status: number, errors?: Record<string, string>) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.errors = errors;
+  }
 }
 
 const TOKEN_KEY = "hof_customer_token";
@@ -34,6 +40,10 @@ function getRefreshToken(): string | null {
 export function storeSession(accessToken: string, refreshToken: string) {
   sessionStorage.setItem(TOKEN_KEY, accessToken);
   sessionStorage.setItem(REFRESH_KEY, refreshToken);
+}
+
+export function hasSession(): boolean {
+  return getToken() !== null;
 }
 
 export function clearSession() {
@@ -107,7 +117,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<ApiRespo
 
   if (res.status === 401) {
     clearSession();
-    throw { status: 401, message: "Session expired. Please log in again." } as ApiError;
+    throw new ApiError("Session expired. Please log in again.", 401);
   }
 
   if (!res.ok) {
@@ -118,7 +128,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<ApiRespo
     } catch {
       // ignore parse error
     }
-    throw { status: res.status, message } as ApiError;
+    throw new ApiError(message, res.status);
   }
 
   return res.json() as Promise<ApiResponse<T>>;

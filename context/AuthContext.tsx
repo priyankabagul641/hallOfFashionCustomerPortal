@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { apiGet, apiPost, storeSession, clearSession, ApiError } from '@/lib/api-client';
+import { apiGet, apiPost, storeSession, clearSession, hasSession, ApiError } from '@/lib/api-client';
 
 interface User {
   id: string;
@@ -19,8 +19,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, phone: string, password: string) => Promise<void>;
   logout: () => void;
-  sendOTP: (phone: string) => Promise<{ otpId: string }>;
-  verifyOTP: (otpId: string, otp: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
 }
@@ -55,6 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Hydrate session from backend on mount (token lives in sessionStorage via api-client)
   useEffect(() => {
+    if (!hasSession()) {
+      Promise.resolve().then(() => setIsLoading(false));
+      return;
+    }
     apiGet<MeResponse>('/auth/me')
       .then((res) => setUser(toUser(res.data)))
       .catch(() => setUser(null))
@@ -105,35 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const sendOTP = useCallback(async (phone: string) => {
-    setError(null);
-    try {
-      await apiPost('/auth/otp/send', { phone });
-      return { otpId: phone };
-    } catch (err) {
-      setError(errorMessage(err));
-      throw err;
-    }
-  }, []);
-
-  const verifyOTP = useCallback(async (otpId: string, otp: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await apiPost<AuthTokens & { user: MeResponse }>('/auth/otp/verify', {
-        phone: otpId,
-        otp,
-      });
-      storeSession(res.data.accessToken, res.data.refreshToken);
-      setUser(toUser(res.data.user));
-    } catch (err) {
-      setError(errorMessage(err));
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   const forgotPassword = useCallback(async (email: string) => {
     setError(null);
     try {
@@ -162,8 +135,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     signup,
     logout,
-    sendOTP,
-    verifyOTP,
     forgotPassword,
     resetPassword,
   };

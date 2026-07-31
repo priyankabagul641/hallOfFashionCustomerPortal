@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
-import { useCart } from '@/context/CartContext';
+import { useCart, cartItemKey } from '@/context/CartContext';
 import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
 
 export default function CartPage() {
@@ -65,7 +65,7 @@ export default function CartPage() {
               >
                 {cartItems.map((item, idx) => (
                   <motion.div
-                    key={`${item.id}-${item.size}`}
+                    key={cartItemKey(item)}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.1 }}
@@ -116,7 +116,7 @@ export default function CartPage() {
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => removeFromCart(item.id, item.size)}
+                        onClick={() => removeFromCart(cartItemKey(item))}
                         className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 size={20} />
@@ -125,7 +125,7 @@ export default function CartPage() {
                       <div className="flex items-center gap-3 bg-card rounded-lg p-1 border border-border">
                         <motion.button
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)}
+                          onClick={() => updateQuantity(cartItemKey(item), item.quantity - 1)}
                           className="p-1 hover:bg-background rounded transition-colors"
                         >
                           <Minus size={16} />
@@ -135,7 +135,7 @@ export default function CartPage() {
                         </span>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}
+                          onClick={() => updateQuantity(cartItemKey(item), item.quantity + 1)}
                           className="p-1 hover:bg-background rounded transition-colors"
                         >
                           <Plus size={16} />
@@ -166,12 +166,12 @@ export default function CartPage() {
                     <span className="font-semibold">₹{cartTotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tax (18%)</span>
+                    <span className="text-muted-foreground">Tax (est. 18%)</span>
                     <span className="font-semibold">₹{tax.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
-                      Shipping {shipping === 0 && <span className="text-accent">(Free)</span>}
+                      Shipping (est.) {shipping === 0 && <span className="text-accent">(Free)</span>}
                     </span>
                     <span className="font-semibold">
                       ₹{shipping.toLocaleString()}
@@ -180,12 +180,15 @@ export default function CartPage() {
                 </div>
 
                 <div className="border-t border-border pt-4">
-                  <div className="flex justify-between mb-6">
-                    <span className="font-bold text-lg">Total</span>
+                  <div className="flex justify-between mb-1">
+                    <span className="font-bold text-lg">Estimated Total</span>
                     <span className="font-bold text-2xl text-accent">
                       ₹{finalTotal.toLocaleString()}
                     </span>
                   </div>
+                  <p className="text-xs text-muted-foreground mb-5">
+                    Final tax and total are calculated at checkout.
+                  </p>
 
                   <Link href="/checkout">
                     <motion.button

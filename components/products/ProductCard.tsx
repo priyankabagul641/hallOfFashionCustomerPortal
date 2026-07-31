@@ -56,16 +56,19 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    // Add with first available size
+    // Quick-add uses default color/size — full variant picker lives on the
+    // product detail page.
     const defaultSize = product.sizes?.[0] || 'M';
-    
+    const defaultColor = 'Default';
+
     addToCart({
-      id: product.id,
+      productId: product.id,
       name: product.name,
       price: product.discountPrice || product.price,
       quantity: 1,
       image: product.images[0],
       size: defaultSize,
+      color: defaultColor,
       designer: product.designer,
     });
 

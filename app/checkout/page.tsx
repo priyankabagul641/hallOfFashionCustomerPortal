@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
-import { useCart } from '@/context/CartContext';
+import { useCart, cartItemKey } from '@/context/CartContext';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Spinner } from '@/components/ui/spinner';
 import { ShoppingBag, MapPin, Lock, CheckCircle } from 'lucide-react';
-import { createOrderFromCart, saveStoredOrder } from '@/lib/order-history';
+import { checkout, CheckoutOrderResult } from '@/lib/api/orders';
+import { ApiError } from '@/lib/api-client';
+import { toast } from 'sonner';
 
 type CheckoutStep = 'shipping' | 'payment' | 'confirmation';
 
@@ -16,7 +18,9 @@ export default function CheckoutPage() {
   const { isLoading } = useAuthGuard();
   const { cartTotal, cartItems, clearCart } = useCart();
   const [step, setStep] = useState<CheckoutStep>('shipping');
-  const [orderNumber, setOrderNumber] = useState('');
+  const [placedOrders, setPlacedOrders] = useState<CheckoutOrderResult[]>([]);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  const [isPlacing, setIsPlacing] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -37,21 +41,25 @@ export default function CheckoutPage() {
     );
   }
 
-  const tax = cartTotal * 0.18;
-  const shipping = 500;
-  const finalTotal = cartTotal + tax + shipping;
+  // Estimate shown only while filling shipping/payment steps, before real totals exist.
+  const estimatedTax = cartTotal * 0.18;
+  const estimatedShipping = 500;
+  const estimatedTotal = cartTotal + estimatedTax + estimatedShipping;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleNextStep = () => {
-    if (step === 'shipping') {
-      setStep('payment');
-    } else if (step === 'payment') {
-      const order = createOrderFromCart({
-        cartItems,
+  const placeOrder = async () => {
+    setIsPlacing(true);
+    try {
+      const res = await checkout({
+        items: cartItems.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+        })),
         shippingAddress: {
           name: `${formData.firstName} ${formData.lastName}`.trim(),
           phone: formData.phone,
@@ -60,13 +68,26 @@ export default function CheckoutPage() {
           state: formData.state,
           pincode: formData.pincode,
         },
-        paymentMethod: 'card',
-        total: finalTotal,
+        paymentMethod: 'cod',
       });
-      saveStoredOrder(order);
-      setOrderNumber(order.orderNumber);
+      setPlacedOrders(res.data.orders);
+      setConfirmationMessage(
+        res.data.message || `${res.data.orders.length} order${res.data.orders.length === 1 ? '' : 's'} placed`
+      );
       setStep('confirmation');
       clearCart();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to place order. Please try again.');
+    } finally {
+      setIsPlacing(false);
+    }
+  };
+
+  const handleNextStep = () => {
+    if (step === 'shipping') {
+      setStep('payment');
+    } else if (step === 'payment') {
+      placeOrder();
     }
   };
 
@@ -224,45 +245,13 @@ export default function CheckoutPage() {
                     </h2>
 
                     <div className="space-y-4">
-                      {[
-                        { id: 'card', label: 'Credit/Debit Card' },
-                        { id: 'upi', label: 'UPI' },
-                        { id: 'wallet', label: 'Digital Wallet' },
-                        { id: 'emi', label: 'EMI' },
-                      ].map((method) => (
-                        <label
-                          key={method.id}
-                          className="flex items-center gap-4 p-6 border-2 border-border rounded-lg cursor-pointer hover:border-accent transition-colors"
-                        >
-                          <input type="radio" name="payment" defaultChecked={method.id === 'card'} />
-                          <span className="font-semibold">{method.label}</span>
-                        </label>
-                      ))}
-                    </div>
-
-                    <div className="mt-8 space-y-4">
-                      <input
-                        type="text"
-                        placeholder="Cardholder Name"
-                        className="w-full px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Card Number"
-                        className="w-full px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                      <div className="grid grid-cols-2 gap-4">
-                        <input
-                          type="text"
-                          placeholder="MM/YY"
-                          className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                        />
-                        <input
-                          type="text"
-                          placeholder="CVV"
-                          className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                        />
-                      </div>
+                      <label className="flex items-center gap-4 p-6 border-2 border-accent bg-accent/5 rounded-lg cursor-pointer">
+                        <input type="radio" name="payment" checked readOnly />
+                        <span className="font-semibold">Cash on Delivery</span>
+                      </label>
+                      <p className="text-sm text-muted-foreground">
+                        Pay in cash when your order is delivered. No online payment required.
+                      </p>
                     </div>
                   </div>
 
@@ -270,9 +259,10 @@ export default function CheckoutPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleNextStep}
-                    className="w-full mt-8 py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:shadow-premium transition-all"
+                    disabled={isPlacing}
+                    className="w-full mt-8 py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:shadow-premium transition-all disabled:opacity-60"
                   >
-                    Complete Purchase
+                    {isPlacing ? 'Placing Order...' : 'Complete Purchase'}
                   </motion.button>
                 </motion.div>
               )}
@@ -293,9 +283,42 @@ export default function CheckoutPage() {
                     <h2 className="text-4xl font-playfair font-bold mb-4">
                       Order Confirmed!
                     </h2>
-                    <p className="text-muted-foreground text-lg">
-                      Thank you for your purchase. Your order number is <span className="font-bold text-foreground">#{orderNumber}</span>
+                    <p className="text-muted-foreground text-lg mb-4">
+                      {confirmationMessage}
                     </p>
+                  </div>
+
+                  <div className="max-w-xl mx-auto space-y-4 text-left">
+                    {placedOrders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="bg-card border border-border rounded-lg p-6 space-y-3"
+                      >
+                        <div className="font-semibold text-sm">#{order.orderNumber}</div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Subtotal</span>
+                            <span>₹{order.subtotal.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Discount</span>
+                            <span>-₹{order.discountAmount.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">GST</span>
+                            <span>₹{order.gstAmount.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Delivery</span>
+                            <span>₹{order.deliveryCharges.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <div className="border-t border-border pt-3 flex justify-between font-bold">
+                          <span>Total</span>
+                          <span className="text-accent">₹{order.total.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   <Link href="/">
                     <motion.button
@@ -309,7 +332,8 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            {/* Order Summary Sidebar */}
+            {/* Order Summary Sidebar (estimate only, pre-checkout) */}
+            {step !== 'confirmation' && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -323,7 +347,7 @@ export default function CheckoutPage() {
 
                 <div className="space-y-3 max-h-64 overflow-y-auto border-b border-border pb-6">
                   {cartItems.map((item) => (
-                    <div key={`${item.id}-${item.size}`} className="space-y-1 text-sm">
+                    <div key={cartItemKey(item)} className="space-y-1 text-sm">
                       <div className="flex justify-between gap-4">
                         <span className="text-muted-foreground">
                           {item.name} x {item.quantity}
@@ -347,23 +371,24 @@ export default function CheckoutPage() {
                     <span>₹{cartTotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Tax</span>
-                    <span>₹{tax.toLocaleString()}</span>
+                    <span>Tax (estimated)</span>
+                    <span>₹{estimatedTax.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Shipping</span>
-                    <span>₹{shipping.toLocaleString()}</span>
+                    <span>Shipping (estimated)</span>
+                    <span>₹{estimatedShipping.toLocaleString()}</span>
                   </div>
                 </div>
 
                 <div className="border-t border-border pt-4">
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span className="text-accent">₹{finalTotal.toLocaleString()}</span>
+                    <span>Estimated Total</span>
+                    <span className="text-accent">₹{estimatedTotal.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
             </motion.div>
+            )}
           </div>
         </div>
       </div>

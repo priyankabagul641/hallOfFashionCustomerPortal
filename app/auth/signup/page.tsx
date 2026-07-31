@@ -5,14 +5,11 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Eye, EyeOff, Check } from 'lucide-react';
-
-type SignupStep = 'form' | 'otp' | 'complete';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
-  const { sendOTP, verifyOTP, isLoading } = useAuth();
-  const [step, setStep] = useState<SignupStep>('form');
+  const { signup, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,17 +19,14 @@ export default function SignupPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [otpId, setOtpId] = useState('');
   const [error, setError] = useState('');
-  const [otpTimer, setOtpTimer] = useState(0);
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSendOTP = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -42,56 +36,10 @@ export default function SignupPage() {
     }
 
     try {
-      const { otpId: id } = await sendOTP(formData.phone);
-      setOtpId(id);
-      setStep('otp');
-      setOtpTimer(60);
-
-      const timer = setInterval(() => {
-        setOtpTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      await signup(formData.name, formData.email, formData.phone, formData.password);
+      router.push('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send OTP');
-    }
-  };
-
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    try {
-      await verifyOTP(otpId, otp);
-      setStep('complete');
-      setTimeout(() => router.push('/'), 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'OTP verification failed');
-    }
-  };
-
-  const handleResendOTP = async () => {
-    try {
-      const { otpId: id } = await sendOTP(formData.phone);
-      setOtpId(id);
-      setOtpTimer(60);
-      setOtp('');
-
-      const timer = setInterval(() => {
-        setOtpTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resend OTP');
+      setError(err instanceof Error ? err.message : 'Failed to create account');
     }
   };
 
@@ -129,8 +77,7 @@ export default function SignupPage() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="glass rounded-2xl p-8 shadow-premium-lg"
         >
-          {step === 'form' && (
-            <>
+          <>
               <h2 className="text-2xl font-playfair font-semibold text-foreground mb-6">
                 Create Account
               </h2>
@@ -145,7 +92,7 @@ export default function SignupPage() {
                 </motion.div>
               )}
 
-              <form onSubmit={handleSendOTP} className="space-y-4">
+              <form onSubmit={handleSignup} className="space-y-4">
                 {/* Name */}
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
@@ -257,7 +204,7 @@ export default function SignupPage() {
                   disabled={isLoading}
                   className="w-full mt-6 px-6 py-3 bg-accent text-luxury-black font-semibold rounded-lg hover:bg-gold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? 'Sending OTP...' : 'Continue'}
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
                 </motion.button>
               </form>
 
@@ -269,88 +216,6 @@ export default function SignupPage() {
                 </Link>
               </p>
             </>
-          )}
-
-          {step === 'otp' && (
-            <>
-              <h2 className="text-2xl font-playfair font-semibold text-foreground mb-2">
-                Verify Your Phone
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                We&apos;ve sent a verification code to {formData.phone}
-              </p>
-
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="mb-4 p-4 rounded-lg bg-red-500/10 text-red-600 text-sm border border-red-500/30"
-                >
-                  {error}
-                </motion.div>
-              )}
-
-              <form onSubmit={handleVerifyOTP} className="space-y-4">
-                <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-foreground mb-2">
-                    Verification Code
-                  </label>
-                  <input
-                    id="otp"
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="000000"
-                    maxLength={6}
-                    className="w-full px-4 py-3 text-center text-2xl tracking-widest rounded-lg bg-background border border-border focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all font-mono"
-                    required
-                  />
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  disabled={isLoading || otp.length !== 6}
-                  className="w-full mt-6 px-6 py-3 bg-accent text-luxury-black font-semibold rounded-lg hover:bg-gold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Verifying...' : 'Verify Code'}
-                </motion.button>
-              </form>
-
-              <div className="text-center mt-4">
-                {otpTimer > 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Resend code in <span className="text-accent font-semibold">{otpTimer}s</span>
-                  </p>
-                ) : (
-                  <button
-                    onClick={handleResendOTP}
-                    className="text-sm text-accent hover:text-gold font-medium transition-colors"
-                  >
-                    Resend Code
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-
-          {step === 'complete' && (
-            <div className="text-center py-8">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 100 }}
-                className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40"
-              >
-                <Check size={32} className="text-emerald-500" />
-              </motion.div>
-              <h2 className="text-2xl font-playfair font-semibold text-foreground mb-2">
-                Welcome to Hall of Fashion!
-              </h2>
-              <p className="text-muted-foreground">Your account has been created successfully.</p>
-            </div>
-          )}
         </motion.div>
 
         {/* Footer */}

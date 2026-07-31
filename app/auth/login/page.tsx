@@ -74,20 +74,6 @@ function LoginForm() {
             Welcome Back
           </h2>
 
-          {/* Demo credentials */}
-          <div className="mb-5 p-4 rounded-xl bg-accent/10 border border-accent/30 text-sm">
-            <p className="font-semibold text-foreground mb-1">🎭 Demo Credentials</p>
-            <p className="text-muted-foreground">Email: <span className="font-mono text-foreground">demo@halloffashion.com</span></p>
-            <p className="text-muted-foreground">Password: <span className="font-mono text-foreground">demo123</span></p>
-            <button
-              type="button"
-              onClick={() => { setEmail('demo@halloffashion.com'); setPassword('demo123'); }}
-              className="mt-2 text-xs text-accent font-semibold hover:underline"
-            >
-              Auto-fill demo credentials →
-            </button>
-          </div>
-
           {error && (
             <motion.div
               initial={{ opacity: 0, x: -20 }}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -8,8 +8,7 @@ import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Spinner } from '@/components/ui/spinner';
 import Footer from '@/components/layout/Footer';
 import { User, ShoppingBag, Heart, MapPin, Settings, LogOut, Package, Award, LucideIcon } from 'lucide-react';
-import { loadStoredOrders } from '@/lib/order-history';
-import { Order } from '@/data/orders';
+import { getMyOrders, Order } from '@/lib/api/orders';
 
 type ActiveTab = 'profile' | 'orders' | 'wishlist' | 'addresses' | 'settings';
 
@@ -17,7 +16,14 @@ export default function AccountPage() {
   const { user, logout } = useAuth();
   const { isLoading } = useAuthGuard();
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
-  const [orders] = useState<Order[]>(() => loadStoredOrders());
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    getMyOrders()
+      .then((res) => setOrders(res.data.orders))
+      .catch(() => setOrders([]));
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -217,11 +223,6 @@ export default function AccountPage() {
                         <div>
                           <p className="font-semibold">Order #{order.orderNumber}</p>
                           <p className="text-sm text-muted-foreground">Placed on {order.date}</p>
-                          {order.items.some((item) => item.customized) && (
-                            <p className="text-xs text-accent mt-1">
-                              {order.items.find((item) => item.customized)?.measurementProfileName || 'Includes custom measurement profile'}
-                            </p>
-                          )}
                         </div>
                       </div>
                       <div className="text-right">

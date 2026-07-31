@@ -22,6 +22,12 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        // Local dev: backend falls back to disk storage when no AWS creds
+        // are configured, serving images from localhost.
+        protocol: 'http',
+        hostname: 'localhost',
+      },
     ],
   },
 }

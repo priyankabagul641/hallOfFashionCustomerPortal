@@ -83,14 +83,16 @@ export default function FeaturedProducts() {
     e.stopPropagation();
 
     const defaultSize = 'M';
+    const defaultColor = 'Default';
 
     addToCart({
-      id: product.id,
+      productId: product.id,
       name: product.name,
       price: product.price,
       quantity: 1,
       image: product.images[0],
       size: defaultSize,
+      color: defaultColor,
       designer: product.designer,
     });
 

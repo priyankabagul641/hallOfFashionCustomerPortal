@@ -25,16 +25,18 @@ export default function WishlistPage() {
   }
 
   const handleMoveToCart = (item: typeof wishlistItems[0]) => {
-    // ponytail: sizes aren't on the public product payload yet, default to M.
+    // ponytail: sizes/colors aren't on the public product payload yet, default them.
     const defaultSize = 'M';
+    const defaultColor = 'Default';
 
     addToCart({
-      id: item.id,
+      productId: item.id,
       name: item.name,
       price: item.price,
       quantity: 1,
       image: item.image,
       size: defaultSize,
+      color: defaultColor,
       designer: item.designer,
     });
 

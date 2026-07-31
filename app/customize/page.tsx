@@ -100,8 +100,10 @@ export default function CustomizationStudioPage() {
     const productType = getSelectedProductType();
     const fabric = getSelectedFabric();
     const colorObj = getSelectedColor();
+    const customId = `custom-${Date.now()}`;
     addToCart({
-      id: `custom-${Date.now()}`,
+      productId: customId,
+      variantId: customId,
       name: `Custom ${productType?.label ?? 'Outfit'} – ${colorObj?.label ?? ''} ${fabric?.label ?? ''}`,
       price: totalPrice(),
       quantity: 1,

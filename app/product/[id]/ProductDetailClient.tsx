@@ -12,10 +12,8 @@ import { ApiError } from '@/lib/api-client';
 import ProductLoadError from '@/components/products/ProductLoadError';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Backend product detail has no size/stock variants on the public endpoint
-// yet (that's SKU-level data behind product_variants) — fall back to a fixed
-// standard size run until that contract exists.
-// ponytail: static size list, replace with product.variants once backend exposes it.
+// Fallback only — used when a product has no product.variants rows yet
+// (legacy products without SKU-level data). Real sizes come from variants.
 const STANDARD_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 import { MeasurementProfile, summarizeMeasurementProfile } from '@/data/measurements';
 import MeasurementProfilePickerModal from '@/components/measurements/MeasurementProfilePickerModal';
@@ -124,13 +122,17 @@ export default function ProductDetailPage() {
         setProduct(foundProduct);
         setNotFound(false);
         setError(null);
-        setSelectedSize(STANDARD_SIZES[0]);
         const firstColor = foundProduct.colorOptions?.[0];
+        const firstColorName = firstColor?.color ?? 'Default';
         setSelectedColorOption(
           firstColor
             ? { name: firstColor.color, hex: firstColor.colorCode || '#c8a56b', images: firstColor.images }
             : { name: 'Default', hex: '#c8a56b', images: foundProduct.images }
         );
+        const sizesForFirstColor = foundProduct.variants?.length
+          ? foundProduct.variants.filter((v) => v.color === firstColorName && v.stock > 0).map((v) => v.size)
+          : STANDARD_SIZES;
+        setSelectedSize(sizesForFirstColor[0] ?? '');
         setSelectedImage(0);
         setLoadedImages({});
       })
@@ -155,6 +157,13 @@ export default function ProductDetailPage() {
       ? [{ name: 'Default', hex: '#c8a56b', images: product.images }]
       : [];
   const activeImages = selectedColorOption?.images?.length ? selectedColorOption.images : product?.images ?? [];
+  const availableSizes = product?.variants?.length && selectedColorOption
+    ? Array.from(new Set(
+        product.variants
+          .filter((v) => v.color === selectedColorOption.name && v.stock > 0)
+          .map((v) => v.size)
+      ))
+    : STANDARD_SIZES;
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -168,13 +177,25 @@ export default function ProductDetailPage() {
       return;
     }
 
+    if (!selectedColorOption) {
+      toast.error('Please select a color');
+      return;
+    }
+
+    const matchedVariant = product.variants?.find(
+      (v) => v.color === selectedColorOption.name && v.size === selectedSize
+    );
+    const variantId = matchedVariant?.variantId;
+
     addToCart({
-      id: product.id,
+      productId: product.id,
+      variantId,
       name: product.name,
       price: product.price,
       quantity: quantity,
       image: activeImages[0] || product.images[0],
       size: selectedSize,
+      color: selectedColorOption.name,
       designer: product.designer,
       isCustomSize: selectedSize === 'custom',
       measurementProfileId: selectedMeasurementProfile?.id,
@@ -434,6 +455,14 @@ export default function ProductDetailPage() {
                           onClick={() => {
                             setSelectedColorOption(color);
                             setSelectedImage(0);
+                            if (product?.variants?.length) {
+                              const sizesForColor = product.variants
+                                .filter((v) => v.color === color.name && v.stock > 0)
+                                .map((v) => v.size);
+                              if (!sizesForColor.includes(selectedSize)) {
+                                setSelectedSize(sizesForColor[0] ?? '');
+                              }
+                            }
                           }}
                           className={`flex items-center gap-3 rounded-full border px-3 py-2 transition-all ${isActive
                             ? 'border-accent bg-accent/10 shadow-sm'
@@ -511,7 +540,7 @@ export default function ProductDetailPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-3">
-                    {STANDARD_SIZES.map((size) => (
+                    {availableSizes.map((size) => (
                       <motion.button
                         key={getStandardSize(size)}
                         whileHover={{ scale: 1.05 }}

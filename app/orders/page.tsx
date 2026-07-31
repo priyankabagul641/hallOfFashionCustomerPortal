@@ -1,18 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Spinner } from '@/components/ui/spinner';
-import { orders, Order } from '@/data/orders';
+import { getMyOrders, Order } from '@/lib/api/orders';
 import {
   Package, Clock, CheckCircle, Truck, MapPin,
   ChevronDown, ChevronUp, RotateCcw, Star, ShoppingBag, X
 } from 'lucide-react';
 
-const statusConfig: Record<Order['status'], { color: string; bg: string; icon: typeof Package }> = {
+const statusConfig: Record<string, { color: string; bg: string; icon: typeof Package }> = {
   'Processing': { color: 'text-amber-700', bg: 'bg-amber-100', icon: Clock },
   'Confirmed': { color: 'text-blue-700', bg: 'bg-blue-100', icon: CheckCircle },
   'In Tailoring': { color: 'text-purple-700', bg: 'bg-purple-100', icon: Package },
@@ -23,13 +23,24 @@ const statusConfig: Record<Order['status'], { color: string; bg: string; icon: t
   'Cancelled': { color: 'text-red-700', bg: 'bg-red-100', icon: X },
   'Returned': { color: 'text-gray-700', bg: 'bg-gray-100', icon: RotateCcw },
 };
+const defaultStatus = { color: 'text-muted-foreground', bg: 'bg-muted', icon: Package };
 
 export default function OrdersPage() {
   const { isLoading } = useAuthGuard();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'delivered'>('all');
 
-  if (isLoading) {
+  useEffect(() => {
+    if (isLoading) return;
+    getMyOrders()
+      .then((res) => setOrders(res.data.orders))
+      .catch(() => setOrders([]))
+      .finally(() => setOrdersLoading(false));
+  }, [isLoading]);
+
+  if (isLoading || ordersLoading) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
         <Spinner className="size-8" />
@@ -99,7 +110,7 @@ export default function OrdersPage() {
 
           <div className="space-y-6">
             {filtered.map((order, idx) => {
-              const status = statusConfig[order.status];
+              const status = statusConfig[order.status] ?? defaultStatus;
               const StatusIcon = status.icon;
               const isExpanded = expandedOrder === order.id;
 
@@ -124,7 +135,9 @@ export default function OrdersPage() {
                         </div>
                         <p className="text-sm text-muted-foreground">
                           Placed on {new Date(order.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
-                          {' · '}Est. Delivery: {new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {order.estimatedDelivery && (
+                            <>{' · '}Est. Delivery: {new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                          )}
                         </p>
                       </div>
                       <div className="text-right">
@@ -179,11 +192,6 @@ export default function OrdersPage() {
                               <h4 className="font-playfair font-semibold text-lg mb-4 flex items-center gap-2">
                                 <Truck size={18} className="text-accent" /> Order Tracking
                               </h4>
-                              {order.trackingNumber && (
-                                <p className="text-xs text-muted-foreground mb-4 bg-muted/20 rounded-lg px-3 py-2">
-                                  Tracking ID: <span className="font-semibold text-foreground">{order.trackingNumber}</span>
-                                </p>
-                              )}
                               <div className="relative">
                                 <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
                                 <div className="space-y-4">
@@ -231,6 +239,7 @@ export default function OrdersPage() {
                                 <div className="bg-muted/20 rounded-xl p-4 space-y-2 text-sm">
                                   <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>₹{order.subtotal.toLocaleString('en-IN')}</span></div>
                                   {order.discount > 0 && <div className="flex justify-between text-emerald-600"><span>Discount</span><span>- ₹{order.discount.toLocaleString('en-IN')}</span></div>}
+                                  <div className="flex justify-between"><span className="text-muted-foreground">GST</span><span>₹{order.tax.toLocaleString('en-IN')}</span></div>
                                   <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span>{order.shipping === 0 ? 'Free' : `₹${order.shipping}`}</span></div>
                                   <div className="flex justify-between font-bold border-t border-border pt-2 mt-2">
                                     <span>Total</span><span className="text-accent">₹{order.total.toLocaleString('en-IN')}</span>

@@ -20,11 +20,19 @@ export interface Product {
   description: string;
 }
 
+export interface ProductVariant {
+  variantId: string;
+  color: string;
+  size: string;
+  stock: number;
+}
+
 export interface ProductDetail extends Product {
   fabricDetails: string;
   occasion: string[];
   tags: string[];
   colorOptions: ProductColorOption[];
+  variants?: ProductVariant[];
 }
 
 export interface ProductFilters {
