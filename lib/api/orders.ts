@@ -32,8 +32,10 @@ export function checkout(payload: CheckoutPayload) {
 
 export interface OrderItem {
   id: string;
+  productId: string;
   name: string;
   image: string;
+  color: string | null;
   quantity: number;
   price: number;
   size: string;

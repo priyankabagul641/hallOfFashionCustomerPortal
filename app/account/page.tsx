@@ -7,8 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Spinner } from '@/components/ui/spinner';
 import Footer from '@/components/layout/Footer';
-import { User, ShoppingBag, Heart, MapPin, Settings, LogOut, Package, Award, LucideIcon, Pencil, Trash2 } from 'lucide-react';
-import { getMyOrders, Order } from '@/lib/api/orders';
+import { User, Heart, MapPin, Settings, LogOut, Award, LucideIcon, Pencil, Trash2 } from 'lucide-react';
 import {
   getAddresses,
   createAddress,
@@ -28,7 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 
-type ActiveTab = 'profile' | 'orders' | 'wishlist' | 'addresses' | 'settings';
+type ActiveTab = 'profile' | 'wishlist' | 'addresses' | 'settings';
 
 const emptyAddressForm: AddressInput = {
   label: '',
@@ -46,7 +45,6 @@ export default function AccountPage() {
   const { user, logout } = useAuth();
   const { isLoading } = useAuthGuard();
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
-  const [orders, setOrders] = useState<Order[]>([]);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
@@ -118,9 +116,6 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!user) return;
-    getMyOrders()
-      .then((res) => setOrders(res.data.orders))
-      .catch(() => setOrders([]));
     loadAddresses();
   }, [user]);
 
@@ -157,7 +152,6 @@ export default function AccountPage() {
 
   const tabs: { id: ActiveTab; label: string; icon: LucideIcon }[] = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'wishlist', label: 'Wishlist', icon: Heart },
     { id: 'addresses', label: 'Addresses', icon: MapPin },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -303,35 +297,6 @@ export default function AccountPage() {
                       </div>
                     </div>
                   </motion.div>
-                </div>
-              )}
-
-              {/* Orders Tab */}
-              {activeTab === 'orders' && (
-                <div className="space-y-4">
-                  <h2 className="text-2xl font-playfair font-semibold mb-6">My Orders</h2>
-                  {orders.map((order) => (
-                    <motion.div
-                      key={order.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="glass rounded-2xl p-6 flex items-center justify-between hover:shadow-premium-lg transition-all"
-                    >
-                      <div className="flex items-center gap-4">
-                        <Package className="w-8 h-8 text-accent" />
-                        <div>
-                          <p className="font-semibold">Order #{order.orderNumber}</p>
-                          <p className="text-sm text-muted-foreground">Placed on {order.date}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-accent">₹{order.total.toLocaleString()}</p>
-                        <p className="text-sm text-emerald-600 font-medium">
-                          {order.status}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
                 </div>
               )}
 

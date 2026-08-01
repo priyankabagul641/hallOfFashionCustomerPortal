@@ -157,13 +157,17 @@ export default function ProductDetailPage() {
       ? [{ name: 'Default', hex: '#c8a56b', images: product.images }]
       : [];
   const activeImages = selectedColorOption?.images?.length ? selectedColorOption.images : product?.images ?? [];
-  const availableSizes = product?.variants?.length && selectedColorOption
-    ? Array.from(new Set(
+  const availableSizes: { size: string; inStock: boolean }[] = product?.variants?.length && selectedColorOption
+    ? Array.from(
         product.variants
-          .filter((v) => v.color === selectedColorOption.name && v.stock > 0)
-          .map((v) => v.size)
-      ))
-    : STANDARD_SIZES;
+          .filter((v) => v.color === selectedColorOption.name)
+          .reduce((map, v) => {
+            const existing = map.get(v.size);
+            map.set(v.size, existing ? existing || v.stock > 0 : v.stock > 0);
+            return map;
+          }, new Map<string, boolean>())
+      ).map(([size, inStock]) => ({ size, inStock }))
+    : STANDARD_SIZES.map((size) => ({ size, inStock: true }));
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -540,18 +544,22 @@ export default function ProductDetailPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-3">
-                    {availableSizes.map((size) => (
+                    {availableSizes.map(({ size, inStock }) => (
                       <motion.button
                         key={getStandardSize(size)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        disabled={!inStock}
+                        whileHover={inStock ? { scale: 1.05 } : undefined}
+                        whileTap={inStock ? { scale: 0.95 } : undefined}
                         onClick={() => {
+                          if (!inStock) return;
                           setSelectedSize(size);
                           setSelectedMeasurementProfile(null);
                         }}
-                        className={`min-w-[75px] h-12 rounded-xl border-2 font-semibold transition-all ${selectedSize === size
-                            ? 'border-accent bg-accent text-white shadow-lg'
-                            : 'border-border hover:border-accent'
+                        className={`min-w-[75px] h-12 rounded-xl border-2 font-semibold transition-all ${!inStock
+                            ? 'border-border text-muted-foreground line-through opacity-50 cursor-not-allowed'
+                            : selectedSize === size
+                              ? 'border-accent bg-accent text-white shadow-lg'
+                              : 'border-border hover:border-accent'
                           }`}
                       >
                         {getStandardSize(size)}
