@@ -172,6 +172,19 @@ function LoginForm() {
               Sign Up
             </Link>
           </p>
+
+          {process.env.NODE_ENV !== 'production' && (
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('customer.demo@halloffashion.com');
+                setPassword('Customer@123');
+              }}
+              className="w-full text-center mt-4 text-xs text-muted-foreground/70 hover:text-muted-foreground underline underline-offset-2"
+            >
+              Use test account (dev only)
+            </button>
+          )}
         </motion.div>
 
         {/* Footer */}

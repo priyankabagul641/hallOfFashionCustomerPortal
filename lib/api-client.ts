@@ -14,9 +14,9 @@ export interface ApiResponse<T> {
 
 export class ApiError extends Error {
   status: number;
-  errors?: Record<string, string>;
+  errors?: Record<string, string[]> | string[];
 
-  constructor(message: string, status: number, errors?: Record<string, string>) {
+  constructor(message: string, status: number, errors?: Record<string, string[]> | string[]) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -122,13 +122,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<ApiRespo
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
+    let errors: Record<string, string[]> | undefined;
     try {
       const body = await res.json();
-      message = body.message ?? message;
+      errors = body.errors;
+      const errorMessages = Array.isArray(body.errors)
+        ? body.errors
+        : errors
+        ? Object.values(errors).flat()
+        : undefined;
+      message = errorMessages?.length ? errorMessages.join(", ") : body.message ?? message;
     } catch {
       // ignore parse error
     }
-    throw new ApiError(message, res.status);
+    throw new ApiError(message, res.status, errors);
   }
 
   return res.json() as Promise<ApiResponse<T>>;
