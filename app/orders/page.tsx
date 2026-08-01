@@ -228,7 +228,11 @@ export default function OrdersPage() {
                                 </h4>
                                 <div className="bg-muted/20 rounded-xl p-4 text-sm space-y-1">
                                   <p className="font-semibold">{order.shippingAddress.name}</p>
-                                  <p className="text-muted-foreground">{order.shippingAddress.address}</p>
+                                  <p className="text-muted-foreground">
+                                    {[order.shippingAddress.line1 ?? order.shippingAddress.address, order.shippingAddress.line2]
+                                      .filter(Boolean)
+                                      .join(', ')}
+                                  </p>
                                   <p className="text-muted-foreground">{order.shippingAddress.city}, {order.shippingAddress.state} – {order.shippingAddress.pincode}</p>
                                   <p className="text-muted-foreground">{order.shippingAddress.phone}</p>
                                 </div>

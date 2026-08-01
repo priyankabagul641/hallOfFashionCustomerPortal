@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
@@ -9,6 +9,7 @@ import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Spinner } from '@/components/ui/spinner';
 import { ShoppingBag, MapPin, Lock, CheckCircle } from 'lucide-react';
 import { checkout, CheckoutOrderResult } from '@/lib/api/orders';
+import { getAddresses, Address } from '@/lib/api/addresses';
 import { ApiError } from '@/lib/api-client';
 import { toast } from 'sonner';
 
@@ -21,17 +22,35 @@ export default function CheckoutPage() {
   const [placedOrders, setPlacedOrders] = useState<CheckoutOrderResult[]>([]);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    address: '',
+    line1: '',
+    line2: '',
     city: '',
     state: '',
     pincode: '',
     country: 'India',
   });
+
+  useEffect(() => {
+    getAddresses()
+      .then((res) => {
+        setSavedAddresses(res.data.addresses);
+        if (res.data.addresses.length === 0) {
+          setShowAddressForm(true);
+        } else {
+          const defaultAddress = res.data.addresses.find((a) => a.isDefault) ?? res.data.addresses[0];
+          setSelectedAddressId(defaultAddress.id);
+        }
+      })
+      .catch(() => setShowAddressForm(true));
+  }, []);
 
   if (isLoading) {
     return (
@@ -51,6 +70,32 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const buildShippingAddress = () => {
+    if (!showAddressForm && selectedAddressId) {
+      const selected = savedAddresses.find((a) => a.id === selectedAddressId);
+      if (selected) {
+        return {
+          name: selected.name,
+          phone: selected.phone,
+          line1: selected.line1,
+          line2: selected.line2 ?? '',
+          city: selected.city,
+          state: selected.state,
+          pincode: selected.pincode,
+        };
+      }
+    }
+    return {
+      name: `${formData.firstName} ${formData.lastName}`.trim(),
+      phone: formData.phone,
+      line1: formData.line1,
+      line2: formData.line2,
+      city: formData.city,
+      state: formData.state,
+      pincode: formData.pincode,
+    };
+  };
+
   const placeOrder = async () => {
     setIsPlacing(true);
     try {
@@ -60,14 +105,7 @@ export default function CheckoutPage() {
           variantId: item.variantId,
           quantity: item.quantity,
         })),
-        shippingAddress: {
-          name: `${formData.firstName} ${formData.lastName}`.trim(),
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-        },
+        shippingAddress: buildShippingAddress(),
         paymentMethod: 'cod',
       });
       setPlacedOrders(res.data.orders);
@@ -85,6 +123,10 @@ export default function CheckoutPage() {
 
   const handleNextStep = () => {
     if (step === 'shipping') {
+      if (!showAddressForm && !selectedAddressId) {
+        toast.error('Please select or add a delivery address.');
+        return;
+      }
       setStep('payment');
     } else if (step === 'payment') {
       placeOrder();
@@ -144,81 +186,149 @@ export default function CheckoutPage() {
                       <MapPin className="w-8 h-8 text-accent" />
                       Delivery Address
                     </h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <input
-                        type="text"
-                        placeholder="First Name"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Last Name"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                      <input
-                        type="email"
-                        placeholder="Email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                      <input
-                        type="tel"
-                        placeholder="Phone Number"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Full Address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent md:col-span-2"
-                      />
-                      <input
-                        type="text"
-                        placeholder="City"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                      <input
-                        type="text"
-                        placeholder="State"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Pincode"
-                        name="pincode"
-                        value={formData.pincode}
-                        onChange={handleInputChange}
-                        className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      />
-                      <select
-                        name="country"
-                        value={formData.country}
-                        onChange={handleInputChange}
-                        className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                      >
-                        <option>India</option>
-                      </select>
-                    </div>
+
+                    {!showAddressForm && savedAddresses.length > 0 && (
+                      <div className="space-y-4">
+                        {savedAddresses.map((address) => (
+                          <label
+                            key={address.id}
+                            className={`block glass rounded-2xl p-6 cursor-pointer transition-all ${
+                              selectedAddressId === address.id
+                                ? 'border-2 border-accent'
+                                : 'border border-border'
+                            }`}
+                          >
+                            <div className="flex items-start gap-4">
+                              <input
+                                type="radio"
+                                name="savedAddress"
+                                checked={selectedAddressId === address.id}
+                                onChange={() => setSelectedAddressId(address.id)}
+                                className="mt-1"
+                              />
+                              <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                  <p className="font-semibold">{address.label}</p>
+                                  {address.isDefault && (
+                                    <span className="px-3 py-1 bg-accent/20 text-accent text-xs font-semibold rounded-full">
+                                      Default
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm mt-1">{address.name} &middot; {address.phone}</p>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  {address.line1}
+                                  {address.line2 ? `, ${address.line2}` : ''}, {address.city}, {address.state} {address.pincode}
+                                </p>
+                              </div>
+                            </div>
+                          </label>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setShowAddressForm(true)}
+                          className="w-full text-center py-4 border-2 border-dashed border-border rounded-lg font-semibold text-accent hover:border-accent transition-all"
+                        >
+                          + Add New Address
+                        </button>
+                      </div>
+                    )}
+
+                    {showAddressForm && (
+                      <div className="space-y-4">
+                        {savedAddresses.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAddressForm(false)}
+                            className="text-sm font-medium text-accent hover:underline"
+                          >
+                            &larr; Use a saved address
+                          </button>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <input
+                            type="text"
+                            placeholder="First Name"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Last Name"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                          />
+                          <input
+                            type="email"
+                            placeholder="Email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                          />
+                          <input
+                            type="tel"
+                            placeholder="Phone Number"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Address Line 1"
+                            name="line1"
+                            value={formData.line1}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent md:col-span-2"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Address Line 2 (optional)"
+                            name="line2"
+                            value={formData.line2}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent md:col-span-2"
+                          />
+                          <input
+                            type="text"
+                            placeholder="City"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                          />
+                          <input
+                            type="text"
+                            placeholder="State"
+                            name="state"
+                            value={formData.state}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Pincode"
+                            name="pincode"
+                            value={formData.pincode}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                          />
+                          <select
+                            name="country"
+                            value={formData.country}
+                            onChange={handleInputChange}
+                            className="px-6 py-4 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+                          >
+                            <option>India</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <motion.button

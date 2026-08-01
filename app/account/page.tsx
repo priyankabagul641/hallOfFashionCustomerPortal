@@ -7,10 +7,40 @@ import { useAuth } from '@/context/AuthContext';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Spinner } from '@/components/ui/spinner';
 import Footer from '@/components/layout/Footer';
-import { User, ShoppingBag, Heart, MapPin, Settings, LogOut, Package, Award, LucideIcon } from 'lucide-react';
+import { User, ShoppingBag, Heart, MapPin, Settings, LogOut, Package, Award, LucideIcon, Pencil, Trash2 } from 'lucide-react';
 import { getMyOrders, Order } from '@/lib/api/orders';
+import {
+  getAddresses,
+  createAddress,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress,
+  Address,
+  AddressInput,
+} from '@/lib/api/addresses';
+import { ApiError } from '@/lib/api-client';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 type ActiveTab = 'profile' | 'orders' | 'wishlist' | 'addresses' | 'settings';
+
+const emptyAddressForm: AddressInput = {
+  label: '',
+  name: '',
+  phone: '',
+  line1: '',
+  line2: '',
+  city: '',
+  state: '',
+  pincode: '',
+  isDefault: false,
+};
 
 export default function AccountPage() {
   const { user, logout } = useAuth();
@@ -18,11 +48,80 @@ export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
   const [orders, setOrders] = useState<Order[]>([]);
 
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [addressForm, setAddressForm] = useState<AddressInput>(emptyAddressForm);
+  const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null);
+
+  const loadAddresses = () => {
+    getAddresses()
+      .then((res) => setAddresses(res.data.addresses))
+      .catch(() => setAddresses([]));
+  };
+
+  const openAddAddress = () => {
+    setEditingAddressId(null);
+    setAddressForm(emptyAddressForm);
+    setIsAddressFormOpen(true);
+  };
+
+  const openEditAddress = (address: Address) => {
+    setEditingAddressId(address.id);
+    setAddressForm({
+      label: address.label,
+      name: address.name,
+      phone: address.phone,
+      line1: address.line1,
+      line2: address.line2,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      isDefault: address.isDefault,
+    });
+    setIsAddressFormOpen(true);
+  };
+
+  const handleSaveAddress = async () => {
+    try {
+      if (editingAddressId) {
+        await updateAddress(editingAddressId, addressForm);
+      } else {
+        await createAddress(addressForm);
+      }
+      setIsAddressFormOpen(false);
+      loadAddresses();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to save address.');
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    try {
+      await setDefaultAddress(id);
+      loadAddresses();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to set default address.');
+    }
+  };
+
+  const handleDeleteAddress = async () => {
+    if (!deletingAddressId) return;
+    try {
+      await deleteAddress(deletingAddressId);
+      setDeletingAddressId(null);
+      loadAddresses();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to delete address.');
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     getMyOrders()
       .then((res) => setOrders(res.data.orders))
       .catch(() => setOrders([]));
+    loadAddresses();
   }, [user]);
 
   if (isLoading) {
@@ -266,27 +365,71 @@ export default function AccountPage() {
                     <h2 className="text-2xl font-playfair font-semibold">Saved Addresses</h2>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={openAddAddress}
                       className="px-4 py-2 bg-accent text-luxury-black font-semibold rounded-lg"
                     >
                       Add New
                     </motion.button>
                   </div>
 
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="glass rounded-2xl p-6"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="font-semibold">Home</p>
-                        <p className="text-sm text-muted-foreground mt-2">123 Main Street, Mumbai, MH 400001</p>
+                  {addresses.length === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="glass rounded-2xl p-8 text-center"
+                    >
+                      <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                      <p className="text-muted-foreground">No saved addresses yet</p>
+                    </motion.div>
+                  )}
+
+                  {addresses.map((address) => (
+                    <motion.div
+                      key={address.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="glass rounded-2xl p-6"
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <p className="font-semibold">{address.label}</p>
+                          <p className="text-sm mt-1">{address.name} &middot; {address.phone}</p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {address.line1}
+                            {address.line2 ? `, ${address.line2}` : ''}, {address.city}, {address.state} {address.pincode}
+                          </p>
+                        </div>
+                        {address.isDefault && (
+                          <span className="px-3 py-1 bg-accent/20 text-accent text-xs font-semibold rounded-full whitespace-nowrap">
+                            Default
+                          </span>
+                        )}
                       </div>
-                      <span className="px-3 py-1 bg-accent/20 text-accent text-xs font-semibold rounded-full">
-                        Default
-                      </span>
-                    </div>
-                  </motion.div>
+                      <div className="flex items-center gap-3 pt-4 border-t border-border">
+                        {!address.isDefault && (
+                          <button
+                            onClick={() => handleSetDefault(address.id)}
+                            className="text-sm font-medium text-accent hover:underline"
+                          >
+                            Set as default
+                          </button>
+                        )}
+                        <button
+                          onClick={() => openEditAddress(address)}
+                          className="text-sm font-medium flex items-center gap-1 text-foreground hover:text-accent ml-auto"
+                        >
+                          <Pencil size={14} /> Edit
+                        </button>
+                        <button
+                          onClick={() => setDeletingAddressId(address.id)}
+                          className="text-sm font-medium flex items-center gap-1 text-red-600 hover:text-red-500"
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               )}
 
@@ -333,6 +476,139 @@ export default function AccountPage() {
         </div>
       </div>
       <Footer />
+
+      {/* Add/Edit Address Dialog */}
+      <Dialog open={isAddressFormOpen} onOpenChange={setIsAddressFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingAddressId ? 'Edit Address' : 'Add New Address'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Label</label>
+              <input
+                type="text"
+                placeholder="Home / Work"
+                value={addressForm.label}
+                onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Name</label>
+              <input
+                type="text"
+                value={addressForm.name}
+                onChange={(e) => setAddressForm({ ...addressForm, name: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Phone</label>
+              <input
+                type="tel"
+                value={addressForm.phone}
+                onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Pincode</label>
+              <input
+                type="text"
+                value={addressForm.pincode}
+                onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-2">Address Line 1</label>
+              <input
+                type="text"
+                value={addressForm.line1}
+                onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-2">Address Line 2 (optional)</label>
+              <input
+                type="text"
+                value={addressForm.line2}
+                onChange={(e) => setAddressForm({ ...addressForm, line2: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">City</label>
+              <input
+                type="text"
+                value={addressForm.city}
+                onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">State</label>
+              <input
+                type="text"
+                value={addressForm.state}
+                onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:outline-none focus:border-accent"
+              />
+            </div>
+            <label className="md:col-span-2 flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={addressForm.isDefault}
+                onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                className="w-5 h-5 accent-accent"
+              />
+              <span className="text-sm font-medium">Set as default address</span>
+            </label>
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setIsAddressFormOpen(false)}
+              className="px-6 py-2 border border-border font-semibold rounded-lg hover:bg-background/50 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveAddress}
+              className="px-6 py-2 bg-accent text-luxury-black font-semibold rounded-lg hover:bg-gold transition-all"
+            >
+              Save Address
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Address Confirm Dialog */}
+      <Dialog open={!!deletingAddressId} onOpenChange={(open) => !open && setDeletingAddressId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Address</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm">
+            Are you sure you want to delete this address? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <button
+              onClick={() => setDeletingAddressId(null)}
+              className="px-6 py-2 border border-border font-semibold rounded-lg hover:bg-background/50 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteAddress}
+              className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 transition-all"
+            >
+              Delete
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
