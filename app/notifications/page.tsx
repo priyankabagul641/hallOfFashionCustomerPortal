@@ -4,27 +4,48 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
-import { notifications as initialNotifications, Notification } from '@/data/notifications';
-import { Bell, BellOff, Check, Trash2, ChevronRight, Package, Tag, Settings, Heart, Scissors, CreditCard } from 'lucide-react';
+import { useNotifications } from '@/hooks/use-notifications';
+import type { Notification } from '@/lib/api/notifications';
+import { Bell, BellOff, Check, Trash2, ChevronRight, Package, Settings, CreditCard } from 'lucide-react';
 
 const typeConfig: Record<Notification['type'], { icon: typeof Bell; color: string; bg: string }> = {
   order: { icon: Package, color: 'text-blue-600', bg: 'bg-blue-100' },
-  offer: { icon: Tag, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-  system: { icon: Bell, color: 'text-purple-600', bg: 'bg-purple-100' },
-  wishlist: { icon: Heart, color: 'text-rose-600', bg: 'bg-rose-100' },
-  tailor: { icon: Scissors, color: 'text-amber-600', bg: 'bg-amber-100' },
   payment: { icon: CreditCard, color: 'text-teal-600', bg: 'bg-teal-100' },
 };
 
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function NotificationSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="bg-card rounded-2xl border border-border p-5 animate-pulse">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-muted shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-muted rounded w-1/3" />
+              <div className="h-3 bg-muted rounded w-full" />
+              <div className="h-3 bg-muted rounded w-1/4" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const { notifications, unreadCount, loading, error, markRead, markAllRead, deleteOne, clearAll } = useNotifications();
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | Notification['type']>('all');
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
-  const markAllRead = () => setNotifications(notifications.map((n) => ({ ...n, isRead: true })));
-  const markRead = (id: string) => setNotifications(notifications.map((n) => n.id === id ? { ...n, isRead: true } : n));
-  const deleteNotification = (id: string) => setNotifications(notifications.filter((n) => n.id !== id));
 
   const filtered = notifications.filter((n) => {
     if (activeFilter === 'unread') return !n.isRead;
@@ -73,10 +94,7 @@ export default function NotificationsPage() {
               ['all', 'All'],
               ['unread', `Unread (${unreadCount})`],
               ['order', 'Orders'],
-              ['offer', 'Offers'],
-              ['tailor', 'Tailor'],
               ['payment', 'Payments'],
-              ['wishlist', 'Wishlist'],
             ] as [string, string][]).map(([filter, label]) => (
               <button
                 key={filter}
@@ -97,7 +115,16 @@ export default function NotificationsPage() {
       {/* Notifications List */}
       <section className="py-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {filtered.length === 0 && (
+          {loading && <NotificationSkeleton />}
+
+          {!loading && error && (
+            <div className="text-center py-24">
+              <p className="text-destructive font-semibold mb-1">Error loading notifications</p>
+              <p className="text-muted-foreground text-sm">{error}</p>
+            </div>
+          )}
+
+          {!loading && !error && filtered.length === 0 && (
             <div className="text-center py-24">
               <BellOff className="mx-auto mb-4 text-muted-foreground" size={48} />
               <p className="font-playfair text-xl font-semibold mb-2">No notifications</p>
@@ -105,86 +132,89 @@ export default function NotificationsPage() {
             </div>
           )}
 
-          <div className="space-y-3">
-            {filtered.map((notification, idx) => {
-              const config = typeConfig[notification.type];
+          {!loading && !error && filtered.length > 0 && (
+            <div className="space-y-3">
+              {filtered.map((notification, idx) => {
+                const config = typeConfig[notification.type];
+                const Icon = config.icon;
 
-              return (
-                <motion.div
-                  key={notification.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  onClick={() => markRead(notification.id)}
-                  className={`group relative bg-card rounded-2xl border p-5 cursor-pointer transition-all hover:shadow-md ${
-                    !notification.isRead
-                      ? 'border-accent/30 bg-accent/5'
-                      : 'border-border'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Icon */}
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-xl ${config.bg}`}>
-                      <span>{notification.icon}</span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <p className={`font-semibold text-sm ${!notification.isRead ? 'text-foreground' : 'text-foreground/80'}`}>
-                              {notification.title}
-                            </p>
-                            {!notification.isRead && (
-                              <span className="w-2 h-2 rounded-full bg-accent shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground mt-2">{notification.time}</p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {!notification.isRead && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); markRead(notification.id); }}
-                              className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-accent"
-                              title="Mark as read"
-                            >
-                              <Check size={14} />
-                            </button>
-                          )}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); deleteNotification(notification.id); }}
-                            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
-                            title="Delete"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                return (
+                  <motion.div
+                    key={notification.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    onClick={() => !notification.isRead && markRead(notification.id)}
+                    className={`group relative bg-card rounded-2xl border p-5 cursor-pointer transition-all hover:shadow-md ${
+                      !notification.isRead
+                        ? 'border-accent/30 bg-accent/5'
+                        : 'border-border'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${config.bg}`}>
+                        <Icon className={config.color} size={20} />
                       </div>
 
-                      {notification.actionLabel && notification.actionHref && (
-                        <Link
-                          href={notification.actionHref}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-accent hover:underline"
-                        >
-                          {notification.actionLabel} <ChevronRight size={12} />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <p className={`font-semibold text-sm ${!notification.isRead ? 'text-foreground' : 'text-foreground/80'}`}>
+                                {notification.title}
+                              </p>
+                              {!notification.isRead && (
+                                <span className="w-2 h-2 rounded-full bg-accent shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground mt-2">{timeAgo(notification.createdAt)}</p>
+                          </div>
 
-          {notifications.length > 0 && (
+                          {/* Actions */}
+                          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {!notification.isRead && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); markRead(notification.id); }}
+                                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-accent"
+                                title="Mark as read"
+                              >
+                                <Check size={14} />
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); deleteOne(notification.id); }}
+                              className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
+                              title="Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {notification.actionUrl && (
+                          <Link
+                            href={notification.actionUrl}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-accent hover:underline"
+                          >
+                            View details <ChevronRight size={12} />
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
+          {!loading && !error && notifications.length > 0 && (
             <div className="mt-8 text-center">
               <button
-                onClick={() => setNotifications([])}
+                onClick={clearAll}
                 className="text-sm text-muted-foreground hover:text-destructive transition-colors flex items-center gap-2 mx-auto"
               >
                 <Trash2 size={14} /> Clear All Notifications

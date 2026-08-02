@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/hooks/use-notifications';
 
 // ─── Menu data ────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,7 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { cartCount, wishlistCount } = useCart();
+  const { unreadCount: unreadNotifCount } = useNotifications();
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -239,7 +241,11 @@ export default function Navbar() {
             <Link href="/notifications">
               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="relative p-2.5 hover:text-accent rounded-lg hover:bg-accent/8 transition-colors">
                 <Bell size={19} />
-                <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-accent rounded-full" />
+                {unreadNotifCount > 0 && (
+                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-0.5 -right-0.5 bg-accent text-luxury-black text-[10px] font-bold rounded-full min-w-[17px] min-h-[17px] flex items-center justify-center px-0.5">
+                    {unreadNotifCount}
+                  </motion.span>
+                )}
               </motion.button>
             </Link>
 

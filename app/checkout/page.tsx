@@ -9,7 +9,7 @@ import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Spinner } from '@/components/ui/spinner';
 import { ShoppingBag, MapPin, Lock, CheckCircle } from 'lucide-react';
 import { checkout, CheckoutOrderResult } from '@/lib/api/orders';
-import { getAddresses, Address } from '@/lib/api/addresses';
+import { getAddresses, createAddress, Address } from '@/lib/api/addresses';
 import { ApiError } from '@/lib/api-client';
 import { toast } from 'sonner';
 
@@ -25,6 +25,7 @@ export default function CheckoutPage() {
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -121,11 +122,40 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (step === 'shipping') {
       if (!showAddressForm && !selectedAddressId) {
         toast.error('Please select or add a delivery address.');
         return;
+      }
+      if (showAddressForm) {
+        if (isSavingAddress) return;
+        const name = `${formData.firstName} ${formData.lastName}`.trim();
+        if (!name || !formData.phone || !formData.line1 || !formData.city || !formData.state || !formData.pincode) {
+          toast.error('Please fill in all delivery address fields.');
+          return;
+        }
+        setIsSavingAddress(true);
+        try {
+          const res = await createAddress({
+            label: name,
+            name,
+            phone: formData.phone,
+            line1: formData.line1,
+            line2: formData.line2,
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode,
+            isDefault: savedAddresses.length === 0,
+          });
+          setSavedAddresses((prev) => [...prev, res.data]);
+          setSelectedAddressId(res.data.id);
+          setShowAddressForm(false);
+        } catch {
+          // Non-blocking: checkout still proceeds with the entered form data even if saving it fails.
+        } finally {
+          setIsSavingAddress(false);
+        }
       }
       setStep('payment');
     } else if (step === 'payment') {
@@ -335,9 +365,10 @@ export default function CheckoutPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleNextStep}
-                    className="w-full mt-8 py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:shadow-premium transition-all"
+                    disabled={isSavingAddress}
+                    className="w-full mt-8 py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:shadow-premium transition-all disabled:opacity-60"
                   >
-                    Continue to Payment
+                    {isSavingAddress ? 'Saving Address...' : 'Continue to Payment'}
                   </motion.button>
                 </motion.div>
               )}
