@@ -6,8 +6,8 @@ import Footer from '@/components/layout/Footer';
 
 export default function NotFound() {
   return (
-    <main className="bg-background text-foreground min-h-screen flex flex-col">
-      <div className="flex-1 flex items-center justify-center pt-28">
+    <main className="bg-background text-foreground">
+      <div className="flex items-center justify-center pt-28 pb-32">
         <div className="text-center space-y-8 max-w-2xl mx-auto px-4">
           {/* Animated 404 */}
           <motion.div

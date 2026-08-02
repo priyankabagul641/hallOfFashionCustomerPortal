@@ -16,8 +16,8 @@ export default function CartPage() {
 
   if (cartItems.length === 0) {
     return (
-      <main className="bg-background text-foreground min-h-screen flex flex-col">
-        <div className="flex-1 flex items-center justify-center pt-28">
+      <main className="bg-background text-foreground">
+        <div className="flex items-center justify-center pt-28 pb-32">
           <div className="text-center space-y-6">
             <h1 className="text-4xl font-playfair font-bold">Your Cart is Empty</h1>
             <p className="text-muted-foreground text-lg">
