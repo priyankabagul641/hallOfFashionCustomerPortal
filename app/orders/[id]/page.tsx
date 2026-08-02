@@ -14,17 +14,19 @@ import {
 } from 'lucide-react';
 
 const statusConfig: Record<string, { color: string; bg: string; icon: typeof Package }> = {
-  'Processing': { color: 'text-amber-700', bg: 'bg-amber-100', icon: Clock },
-  'Confirmed': { color: 'text-blue-700', bg: 'bg-blue-100', icon: CheckCircle },
-  'In Tailoring': { color: 'text-purple-700', bg: 'bg-purple-100', icon: Package },
-  'Quality Check': { color: 'text-indigo-700', bg: 'bg-indigo-100', icon: CheckCircle },
-  'Shipped': { color: 'text-teal-700', bg: 'bg-teal-100', icon: Truck },
-  'Out for Delivery': { color: 'text-orange-700', bg: 'bg-orange-100', icon: Truck },
-  'Delivered': { color: 'text-emerald-700', bg: 'bg-emerald-100', icon: CheckCircle },
-  'Cancelled': { color: 'text-red-700', bg: 'bg-red-100', icon: X },
-  'Returned': { color: 'text-gray-700', bg: 'bg-gray-100', icon: RotateCcw },
+  pending: { color: 'text-amber-700', bg: 'bg-amber-100', icon: Clock },
+  processing: { color: 'text-amber-700', bg: 'bg-amber-100', icon: Clock },
+  confirmed: { color: 'text-blue-700', bg: 'bg-blue-100', icon: CheckCircle },
+  shipped: { color: 'text-teal-700', bg: 'bg-teal-100', icon: Truck },
+  delivered: { color: 'text-emerald-700', bg: 'bg-emerald-100', icon: CheckCircle },
+  cancelled: { color: 'text-red-700', bg: 'bg-red-100', icon: X },
+  returned: { color: 'text-gray-700', bg: 'bg-gray-100', icon: RotateCcw },
 };
 const defaultStatus = { color: 'text-muted-foreground', bg: 'bg-muted', icon: Package };
+
+function formatLabel(value: string) {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function Check({ size, className }: { size: number; className?: string }) {
   return (
@@ -84,12 +86,12 @@ export default function OrderDetailPage() {
             </Link>
             <div className="flex items-center gap-3 mb-3">
               <span className="font-playfair text-3xl md:text-4xl font-bold">{order.orderNumber}</span>
-              <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${status.bg} ${status.color}`}>
+              <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${status.bg} ${status.color}`}>
                 <StatusIcon size={12} />
                 {order.status}
               </span>
             </div>
-            {order.status === 'Cancelled' && order.cancellationReason && (
+            {order.status === 'cancelled' && order.cancellationReason && (
               <p className="mb-3 text-sm font-medium text-red-400 bg-red-950/40 rounded-lg px-3 py-1.5 inline-block">
                 Cancelled: {order.cancellationReason}
               </p>
@@ -220,16 +222,16 @@ export default function OrderDetailPage() {
               </div>
 
               <div className="bg-card rounded-2xl border border-border shadow-sm p-6 text-sm space-y-1">
-                <p><span className="text-muted-foreground">Payment:</span> <span className="font-semibold">{order.paymentMethod}</span></p>
+                <p><span className="text-muted-foreground">Payment:</span> <span className="font-semibold">{formatLabel(order.paymentMethod)}</span></p>
                 <p>
                   <span className="text-muted-foreground">Status:</span>{' '}
-                  <span className={`font-semibold ${order.paymentStatus === 'Paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                    {order.paymentStatus}
+                  <span className={`font-semibold ${order.paymentStatus === 'paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {formatLabel(order.paymentStatus)}
                   </span>
                 </p>
               </div>
 
-              {order.status === 'Delivered' && (
+              {order.status === 'delivered' && (
                 <button className="w-full py-2.5 border border-accent text-accent rounded-xl font-semibold text-sm hover:bg-accent hover:text-luxury-black transition-all flex items-center justify-center gap-2">
                   <Star size={15} /> Write a Review
                 </button>

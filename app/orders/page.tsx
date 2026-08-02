@@ -13,15 +13,13 @@ import {
 } from 'lucide-react';
 
 const statusConfig: Record<string, { color: string; bg: string; icon: typeof Package }> = {
-  'Processing': { color: 'text-amber-700', bg: 'bg-amber-100', icon: Clock },
-  'Confirmed': { color: 'text-blue-700', bg: 'bg-blue-100', icon: CheckCircle },
-  'In Tailoring': { color: 'text-purple-700', bg: 'bg-purple-100', icon: Package },
-  'Quality Check': { color: 'text-indigo-700', bg: 'bg-indigo-100', icon: CheckCircle },
-  'Shipped': { color: 'text-teal-700', bg: 'bg-teal-100', icon: Truck },
-  'Out for Delivery': { color: 'text-orange-700', bg: 'bg-orange-100', icon: Truck },
-  'Delivered': { color: 'text-emerald-700', bg: 'bg-emerald-100', icon: CheckCircle },
-  'Cancelled': { color: 'text-red-700', bg: 'bg-red-100', icon: X },
-  'Returned': { color: 'text-gray-700', bg: 'bg-gray-100', icon: RotateCcw },
+  pending: { color: 'text-amber-700', bg: 'bg-amber-100', icon: Clock },
+  processing: { color: 'text-amber-700', bg: 'bg-amber-100', icon: Clock },
+  confirmed: { color: 'text-blue-700', bg: 'bg-blue-100', icon: CheckCircle },
+  shipped: { color: 'text-teal-700', bg: 'bg-teal-100', icon: Truck },
+  delivered: { color: 'text-emerald-700', bg: 'bg-emerald-100', icon: CheckCircle },
+  cancelled: { color: 'text-red-700', bg: 'bg-red-100', icon: X },
+  returned: { color: 'text-gray-700', bg: 'bg-gray-100', icon: RotateCcw },
 };
 const defaultStatus = { color: 'text-muted-foreground', bg: 'bg-muted', icon: Package };
 
@@ -48,8 +46,8 @@ export default function OrdersPage() {
   }
 
   const filtered = orders.filter((o) => {
-    if (activeFilter === 'active') return !['Delivered', 'Cancelled', 'Returned'].includes(o.status);
-    if (activeFilter === 'delivered') return o.status === 'Delivered';
+    if (activeFilter === 'active') return !['delivered', 'cancelled', 'returned'].includes(o.status);
+    if (activeFilter === 'delivered') return o.status === 'delivered';
     return true;
   });
 
@@ -128,7 +126,7 @@ export default function OrdersPage() {
                         <div>
                           <div className="flex items-center gap-3 mb-1">
                             <span className="font-semibold text-lg font-playfair">{order.orderNumber}</span>
-                            <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${status.bg} ${status.color}`}>
+                            <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${status.bg} ${status.color}`}>
                               <StatusIcon size={12} />
                               {order.status}
                             </span>
@@ -139,7 +137,7 @@ export default function OrdersPage() {
                               <>{' · '}Est. Delivery: {new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</>
                             )}
                           </p>
-                          {order.status === 'Cancelled' && order.cancellationReason && (
+                          {order.status === 'cancelled' && order.cancellationReason && (
                             <p className="mt-2 text-xs font-medium text-red-700 bg-red-100 rounded-lg px-3 py-1.5 inline-block">
                               Cancelled: {order.cancellationReason}
                             </p>
