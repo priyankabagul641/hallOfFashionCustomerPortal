@@ -56,6 +56,7 @@ export interface Order {
   orderNumber: string;
   date: string;
   status: string;
+  cancellationReason: string | null;
   items: OrderItem[];
   subtotal: number;
   discount: number;

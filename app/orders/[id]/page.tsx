@@ -89,6 +89,11 @@ export default function OrderDetailPage() {
                 {order.status}
               </span>
             </div>
+            {order.status === 'Cancelled' && order.cancellationReason && (
+              <p className="mb-3 text-sm font-medium text-red-400 bg-red-950/40 rounded-lg px-3 py-1.5 inline-block">
+                Cancelled: {order.cancellationReason}
+              </p>
+            )}
             <p className="text-luxury-beige/70 text-sm">
               Placed on {new Date(order.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
               {order.estimatedDelivery && (

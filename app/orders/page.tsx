@@ -139,6 +139,11 @@ export default function OrdersPage() {
                               <>{' · '}Est. Delivery: {new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</>
                             )}
                           </p>
+                          {order.status === 'Cancelled' && order.cancellationReason && (
+                            <p className="mt-2 text-xs font-medium text-red-700 bg-red-100 rounded-lg px-3 py-1.5 inline-block">
+                              Cancelled: {order.cancellationReason}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-muted-foreground">Order Total</p>
