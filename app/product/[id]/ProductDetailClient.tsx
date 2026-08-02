@@ -12,9 +12,6 @@ import { ApiError } from '@/lib/api-client';
 import ProductLoadError from '@/components/products/ProductLoadError';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Fallback only — used when a product has no product.variants rows yet
-// (legacy products without SKU-level data). Real sizes come from variants.
-const STANDARD_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 import { MeasurementProfile, summarizeMeasurementProfile } from '@/data/measurements';
 import MeasurementProfilePickerModal from '@/components/measurements/MeasurementProfilePickerModal';
 import { Heart, ShoppingBag, Share2, Check, Star, Truck, RotateCcw, CheckCircle, ArrowLeft, X } from 'lucide-react';
@@ -96,22 +93,6 @@ export default function ProductDetailPage() {
 
   const visibleReviews = demoReviews.slice(0, 4);
 
-  const getStandardSize = (size: string) => {
-    const map: Record<string, string> = {
-      "34": "XS",
-      "36": "S",
-      "38": "M",
-      "40": "L",
-      "42": "XL",
-      "44": "XXL",
-      "46": "3XL",
-      "48": "4XL",
-      "50": "5XL"
-    };
-
-    return map[size] || size;
-  };
-
   useEffect(() => {
     const productId = params.id as string;
     let cancelled = false;
@@ -129,9 +110,9 @@ export default function ProductDetailPage() {
             ? { name: firstColor.color, hex: firstColor.colorCode || '#c8a56b', images: firstColor.images }
             : { name: 'Default', hex: '#c8a56b', images: foundProduct.images }
         );
-        const sizesForFirstColor = foundProduct.variants?.length
-          ? foundProduct.variants.filter((v) => v.color === firstColorName && v.stock > 0).map((v) => v.size)
-          : STANDARD_SIZES;
+        const sizesForFirstColor = (foundProduct.variants ?? [])
+          .filter((v) => v.color === firstColorName && v.stock > 0)
+          .map((v) => v.size);
         setSelectedSize(sizesForFirstColor[0] ?? '');
         setSelectedImage(0);
         setLoadedImages({});
@@ -157,9 +138,9 @@ export default function ProductDetailPage() {
       ? [{ name: 'Default', hex: '#c8a56b', images: product.images }]
       : [];
   const activeImages = selectedColorOption?.images?.length ? selectedColorOption.images : product?.images ?? [];
-  const availableSizes: { size: string; inStock: boolean }[] = product?.variants?.length && selectedColorOption
+  const availableSizes: { size: string; inStock: boolean }[] = selectedColorOption
     ? Array.from(
-        product.variants
+        (product?.variants ?? [])
           .filter((v) => v.color === selectedColorOption.name)
           .reduce((map, v) => {
             const existing = map.get(v.size);
@@ -167,7 +148,7 @@ export default function ProductDetailPage() {
             return map;
           }, new Map<string, boolean>())
       ).map(([size, inStock]) => ({ size, inStock }))
-    : STANDARD_SIZES.map((size) => ({ size, inStock: true }));
+    : [];
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -459,13 +440,11 @@ export default function ProductDetailPage() {
                           onClick={() => {
                             setSelectedColorOption(color);
                             setSelectedImage(0);
-                            if (product?.variants?.length) {
-                              const sizesForColor = product.variants
-                                .filter((v) => v.color === color.name && v.stock > 0)
-                                .map((v) => v.size);
-                              if (!sizesForColor.includes(selectedSize)) {
-                                setSelectedSize(sizesForColor[0] ?? '');
-                              }
+                            const sizesForColor = (product?.variants ?? [])
+                              .filter((v) => v.color === color.name && v.stock > 0)
+                              .map((v) => v.size);
+                            if (!sizesForColor.includes(selectedSize)) {
+                              setSelectedSize(sizesForColor[0] ?? '');
                             }
                           }}
                           className={`flex items-center gap-3 rounded-full border px-3 py-2 transition-all ${isActive
@@ -485,50 +464,6 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {/* Size Selection */}
-                {/* <div>
-                  <label className="text-sm font-semibold mb-3 block">
-                    Select Size
-                  </label>
-                  <div className="flex flex-wrap gap-3">
-                    {STANDARD_SIZES.map((size) => (
-                      <motion.button
-                        key={getStandardSize(size)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          setSelectedSize(size);
-                          setSelectedMeasurementProfile(null);
-                        }}
-                        className={`min-w-[75px] h-12 rounded-xl border-2 font-semibold transition-all ${selectedSize === size
-                          ? 'border-accent bg-accent text-white shadow-lg'
-                          : 'border-border hover:border-accent'
-                          }`}
-                      // className={`px-6 py-3 rounded-lg border-2 font-semibold transition-colors ${selectedSize === size
-                      //   ? 'border-accent bg-accent/10 text-accent'
-                      //   : 'border-border text-foreground hover:border-accent'
-                      //   }`}
-                      >
-                        {getStandardSize(size)}
-                      </motion.button>
-                    ))}
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        setSelectedSize('custom');
-                        setShowCustomSizePicker(true);
-                      }}
-                      className={`min-w-[140px] h-12 rounded-xl border-2 font-semibold transition-all ${selectedSize === 'custom'
-                        ? 'border-accent bg-accent text-white shadow-lg'
-                        : 'border-dashed border-border hover:border-accent'
-                        }`}
-                    >
-                      Custom Size
-                    </motion.button>
-                  </div>
-                </div> */}
-
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-sm font-semibold">
@@ -544,9 +479,14 @@ export default function ProductDetailPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-3">
+                    {availableSizes.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No sizes available for this product
+                      </p>
+                    )}
                     {availableSizes.map(({ size, inStock }) => (
                       <motion.button
-                        key={getStandardSize(size)}
+                        key={size}
                         disabled={!inStock}
                         whileHover={inStock ? { scale: 1.05 } : undefined}
                         whileTap={inStock ? { scale: 0.95 } : undefined}
@@ -562,7 +502,7 @@ export default function ProductDetailPage() {
                               : 'border-border hover:border-accent'
                           }`}
                       >
-                        {getStandardSize(size)}
+                        {size}
                       </motion.button>
                     ))}
 

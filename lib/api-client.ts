@@ -113,9 +113,14 @@ async function request<T>(path: string, options?: RequestInit): Promise<ApiRespo
   };
 
   const url = `${BASE_URL}${path}`;
+  const hadToken = getToken() !== null;
   const res = await fetchWithAuth(url, { ...options, headers });
 
-  if (res.status === 401) {
+  // Only treat a 401 as "session expired" when the request actually carried a
+  // session token (i.e. an authenticated call whose token was rejected/expired).
+  // A 401 from an unauthenticated call (e.g. login with wrong credentials) is a
+  // normal request failure and must surface the backend's real error message.
+  if (res.status === 401 && hadToken) {
     clearSession();
     throw new ApiError("Session expired. Please log in again.", 401);
   }
