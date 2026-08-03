@@ -8,6 +8,7 @@ import Footer from '@/components/layout/Footer';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Spinner } from '@/components/ui/spinner';
 import { getMyOrder, Order } from '@/lib/api/orders';
+import ReturnRequestModal from '@/components/orders/ReturnRequestModal';
 import {
   Package, Clock, CheckCircle, Truck, MapPin,
   RotateCcw, Star, X, ChevronLeft
@@ -42,6 +43,8 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [orderLoading, setOrderLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [returnSubmitted, setReturnSubmitted] = useState(false);
 
   useEffect(() => {
     if (isLoading || !params?.id) return;
@@ -236,10 +239,35 @@ export default function OrderDetailPage() {
                   <Star size={15} /> Write a Review
                 </button>
               )}
+
+              {order.status === 'delivered' && order.returnEligible !== false && (
+                returnSubmitted ? (
+                  <p className="w-full py-2.5 text-center rounded-xl bg-muted/30 text-sm font-semibold text-muted-foreground">
+                    Return request submitted — under review
+                  </p>
+                ) : (
+                  <button
+                    onClick={() => setReturnModalOpen(true)}
+                    className="w-full py-2.5 border border-border rounded-xl font-semibold text-sm hover:bg-muted/30 transition-all flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw size={15} /> Return / Refund / Exchange
+                  </button>
+                )
+              )}
             </div>
           </div>
         </div>
       </section>
+
+      {order.status === 'delivered' && order.returnEligible !== false && (
+        <ReturnRequestModal
+          open={returnModalOpen}
+          onClose={() => setReturnModalOpen(false)}
+          orderId={order.id}
+          items={order.items}
+          onSubmitted={() => setReturnSubmitted(true)}
+        />
+      )}
 
       <Footer />
     </main>

@@ -173,3 +173,35 @@ export function apiPatch<T>(path: string, body?: unknown) {
 export function apiDelete<T>(path: string) {
   return request<T>(path, { method: "DELETE" });
 }
+
+// Multipart upload (e.g. POST /storage/upload) — no Content-Type set so the
+// browser fills in the multipart boundary itself.
+export async function apiUpload<T>(
+  path: string,
+  file: File,
+  params?: Record<string, string>
+): Promise<ApiResponse<T>> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const url = withQuery(`${BASE_URL}${path}`, params);
+  const res = await fetchWithAuth(url, { method: "POST", body: formData });
+
+  if (res.status === 401) {
+    clearSession();
+    throw new ApiError("Session expired. Please log in again.", 401);
+  }
+
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      message = body.message ?? message;
+    } catch {
+      // ignore parse error
+    }
+    throw new ApiError(message, res.status);
+  }
+
+  return res.json() as Promise<ApiResponse<T>>;
+}

@@ -1,5 +1,7 @@
 import { apiGet, apiPost } from "@/lib/api-client";
 
+export type ReturnRequestType = "return" | "refund" | "exchange";
+
 export interface CheckoutItem {
   productId: string;
   variantId?: string;
@@ -41,6 +43,11 @@ export interface OrderItem {
   size: string;
   designer: string;
   customized: boolean;
+  // Snapshotted at purchase time. Backend returns these on /orders/mine/:id
+  // (see mapOrderForCustomer). Optional so callers still default to true if absent.
+  allowReturn?: boolean;
+  allowRefund?: boolean;
+  allowExchange?: boolean;
 }
 
 export interface TrackingEvent {
@@ -68,6 +75,11 @@ export interface Order {
   shippingAddress: Record<string, string>;
   estimatedDelivery: string | null;
   tracking: TrackingEvent[];
+  // Backend returns these on /orders/mine/:id (orders.return_eligible /
+  // return_end_date). Optional so callers still fall back to status ===
+  // 'delivered' alone if absent.
+  returnEligible?: boolean;
+  returnEndDate?: string | null;
 }
 
 export function getMyOrders() {
@@ -76,4 +88,18 @@ export function getMyOrders() {
 
 export function getMyOrder(id: string) {
   return apiGet<Order>(`/orders/mine/${id}`);
+}
+
+export interface CreateReturnPayload {
+  type: ReturnRequestType;
+  reason: string;
+  photos?: string[];
+  items?: { orderItemId: string; quantity: number; restockable?: boolean }[];
+}
+
+export function createReturnRequest(orderId: string, payload: CreateReturnPayload) {
+  return apiPost<{ id: string; status: string }>(
+    `/orders/${orderId}/returns`,
+    payload
+  );
 }
