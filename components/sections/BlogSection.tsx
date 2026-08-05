@@ -1,12 +1,27 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Calendar, User } from 'lucide-react';
-import { blogPosts } from '@/data/content';
+import { ArrowRight } from 'lucide-react';
+import { getPublicBlogs, PublicBlog } from '@/lib/api/blogs';
 
 export default function BlogSection() {
+  const [posts, setPosts] = useState<PublicBlog[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPublicBlogs()
+      .then((res) => { if (!cancelled) setPosts(res.data.blogs.slice(0, 4)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  if (posts.length === 0) return null;
+
+  const [featured, ...rest] = posts;
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -43,25 +58,24 @@ export default function BlogSection() {
         </motion.div>
 
         {/* Featured Post */}
-        <motion.div
-          variants={itemVariants}
-          className="mb-16"
-        >
-          <div className="relative h-96 md:h-[500px] rounded-2xl overflow-hidden shadow-premium-lg mb-8">
+        <motion.div variants={itemVariants} className="mb-16">
+          <div className="relative h-96 md:h-[500px] rounded-2xl overflow-hidden shadow-premium-lg mb-8 bg-card">
             <Image
-              src="/blog/wedding-trends.jpg"
-              alt={blogPosts[0].title}
+              src={featured.thumbnailUrl || '/placeholder.jpg'}
+              alt={featured.title}
               fill
               className="object-cover hover:scale-105 transition-transform duration-700"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-12">
-              <p className="text-accent text-sm font-semibold mb-4">{blogPosts[0].date}</p>
+              <p className="text-accent text-sm font-semibold mb-4">
+                {new Date(featured.publishedAt).toLocaleDateString()}
+              </p>
               <h3 className="font-playfair text-4xl font-bold text-white mb-4">
-                {blogPosts[0].title}
+                {featured.title}
               </h3>
-              <p className="text-white/90 text-lg mb-6">{blogPosts[0].excerpt}</p>
-              <Link href="/blog/wedding-trends">
+              <p className="text-white/90 text-lg mb-6">{featured.summary}</p>
+              <Link href={`/blog/${featured.slug}`}>
                 <button className="flex items-center gap-2 text-accent hover:text-white transition-colors font-semibold">
                   Read Story <ArrowRight size={20} />
                 </button>
@@ -75,16 +89,16 @@ export default function BlogSection() {
           variants={containerVariants}
           className="grid grid-cols-1 md:grid-cols-3 gap-8"
         >
-          {blogPosts.slice(1).map((post) => (
+          {rest.map((post) => (
             <motion.div
               key={post.id}
               variants={itemVariants}
               className="group"
             >
-              <Link href={`/blog/${post.id}`}>
-                <div className="relative h-48 rounded-xl overflow-hidden mb-6 shadow-premium">
+              <Link href={`/blog/${post.slug}`}>
+                <div className="relative h-48 rounded-xl overflow-hidden mb-6 shadow-premium bg-card">
                   <Image
-                    src={post.image}
+                    src={post.thumbnailUrl || '/placeholder.jpg'}
                     alt={post.title}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-700"
@@ -92,18 +106,20 @@ export default function BlogSection() {
                 </div>
                 <div className="space-y-3">
                   <p className="text-xs text-accent font-semibold uppercase">
-                    {post.date}
+                    {new Date(post.publishedAt).toLocaleDateString()}
                   </p>
                   <h3 className="font-playfair text-xl font-semibold text-foreground group-hover:text-accent transition-colors">
                     {post.title}
                   </h3>
                   <p className="text-muted-foreground text-sm line-clamp-2">
-                    {post.excerpt}
+                    {post.summary}
                   </p>
                   <div className="flex items-center justify-between pt-4">
-                    <span className="text-xs text-muted-foreground">
-                      {post.readTime} read
-                    </span>
+                    {post.readTime && (
+                      <span className="text-xs text-muted-foreground">
+                        {post.readTime} min read
+                      </span>
+                    )}
                     <ArrowRight size={16} className="text-accent group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
