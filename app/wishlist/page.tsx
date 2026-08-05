@@ -38,6 +38,8 @@ export default function WishlistPage() {
       size: defaultSize,
       color: defaultColor,
       designer: item.designer,
+      gstRate: item.gstRate,
+      shippingCharge: item.shippingCharge,
     });
 
     removeFromWishlist(item.id);

@@ -44,6 +44,8 @@ export default function ProductCard({ product }: ProductCardProps) {
         price: product.discountPrice || product.price,
         image: product.images[0],
         designer: product.designer,
+        gstRate: product.gstRate,
+        shippingCharge: product.shippingCharge,
       });
       toast.success('Added to wishlist!', {
         action: {

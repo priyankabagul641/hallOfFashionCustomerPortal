@@ -220,6 +220,8 @@ export default function ProductDetailPage() {
         price: product.price,
         image: product.images[0],
         designer: product.designer,
+        gstRate: product.gstRate,
+        shippingCharge: product.shippingCharge,
       });
       toast.success('Added to wishlist!', {
         action: {

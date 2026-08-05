@@ -34,6 +34,8 @@ export interface WishlistItem {
   price: number;
   image: string;
   designer: string;
+  gstRate?: number;
+  shippingCharge?: number;
 }
 
 // Unique key for a cart line item. Falls back to color+size when there's no
