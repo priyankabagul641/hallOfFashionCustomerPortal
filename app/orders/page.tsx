@@ -23,6 +23,15 @@ const statusConfig: Record<string, { color: string; bg: string; icon: typeof Pac
 };
 const defaultStatus = { color: 'text-muted-foreground', bg: 'bg-muted', icon: Package };
 
+const returnStatusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  requested: { label: 'Return Requested', color: 'text-amber-700', bg: 'bg-amber-100' },
+  approved: { label: 'Return Approved', color: 'text-blue-700', bg: 'bg-blue-100' },
+  pickup_scheduled: { label: 'Pickup Scheduled', color: 'text-teal-700', bg: 'bg-teal-100' },
+  received: { label: 'Return Received', color: 'text-teal-700', bg: 'bg-teal-100' },
+  refunded: { label: 'Refund Processed', color: 'text-emerald-700', bg: 'bg-emerald-100' },
+  rejected: { label: 'Return Rejected', color: 'text-red-700', bg: 'bg-red-100' },
+};
+
 export default function OrdersPage() {
   const { isLoading } = useAuthGuard();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -107,8 +116,14 @@ export default function OrdersPage() {
 
           <div className="space-y-6">
             {filtered.map((order, idx) => {
-              const status = statusConfig[order.status] ?? defaultStatus;
+              const returnStatus = order.status === 'delivered' && order.returnRequest
+                ? returnStatusConfig[order.returnRequest.status]
+                : undefined;
+              const status = returnStatus
+                ? { ...returnStatus, icon: RotateCcw }
+                : statusConfig[order.status] ?? defaultStatus;
               const StatusIcon = status.icon;
+              const statusLabel = returnStatus ? returnStatus.label : order.status;
 
               return (
                 <motion.div
@@ -126,9 +141,9 @@ export default function OrdersPage() {
                         <div>
                           <div className="flex items-center gap-3 mb-1">
                             <span className="font-semibold text-lg font-playfair">{order.orderNumber}</span>
-                            <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${status.bg} ${status.color}`}>
+                            <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${returnStatus ? '' : 'capitalize'} ${status.bg} ${status.color}`}>
                               <StatusIcon size={12} />
-                              {order.status}
+                              {statusLabel}
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground">
