@@ -80,6 +80,11 @@ export interface Order {
   // 'delivered' alone if absent.
   returnEligible?: boolean;
   returnEndDate?: string | null;
+  returnRequest?: {
+    status: "requested" | "approved" | "rejected" | "pickup_scheduled" | "received" | "refunded";
+    type: ReturnRequestType;
+    createdAt: string;
+  } | null;
 }
 
 export function getMyOrders() {

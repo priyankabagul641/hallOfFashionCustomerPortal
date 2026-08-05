@@ -25,6 +25,15 @@ const statusConfig: Record<string, { color: string; bg: string; icon: typeof Pac
 };
 const defaultStatus = { color: 'text-muted-foreground', bg: 'bg-muted', icon: Package };
 
+const returnStatusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  requested: { label: 'Return Requested', color: 'text-amber-700', bg: 'bg-amber-100' },
+  approved: { label: 'Return Approved', color: 'text-blue-700', bg: 'bg-blue-100' },
+  pickup_scheduled: { label: 'Pickup Scheduled', color: 'text-teal-700', bg: 'bg-teal-100' },
+  received: { label: 'Return Received', color: 'text-teal-700', bg: 'bg-teal-100' },
+  refunded: { label: 'Refund Processed', color: 'text-emerald-700', bg: 'bg-emerald-100' },
+  rejected: { label: 'Return Rejected', color: 'text-red-700', bg: 'bg-red-100' },
+};
+
 function formatLabel(value: string) {
   return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -93,6 +102,12 @@ export default function OrderDetailPage() {
                 <StatusIcon size={12} />
                 {order.status}
               </span>
+              {order.returnRequest && (
+                <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${returnStatusConfig[order.returnRequest.status]?.bg ?? defaultStatus.bg} ${returnStatusConfig[order.returnRequest.status]?.color ?? defaultStatus.color}`}>
+                  <RotateCcw size={12} />
+                  {returnStatusConfig[order.returnRequest.status]?.label ?? formatLabel(order.returnRequest.status)}
+                </span>
+              )}
             </div>
             {order.status === 'cancelled' && order.cancellationReason && (
               <p className="mb-3 text-sm font-medium text-red-400 bg-red-950/40 rounded-lg px-3 py-1.5 inline-block">
@@ -240,7 +255,7 @@ export default function OrderDetailPage() {
                 </button>
               )}
 
-              {order.status === 'delivered' && order.returnEligible !== false && (
+              {order.status === 'delivered' && order.returnEligible !== false && !order.returnRequest && (
                 returnSubmitted ? (
                   <p className="w-full py-2.5 text-center rounded-xl bg-muted/30 text-sm font-semibold text-muted-foreground">
                     Return request submitted — under review
@@ -259,7 +274,7 @@ export default function OrderDetailPage() {
         </div>
       </section>
 
-      {order.status === 'delivered' && order.returnEligible !== false && (
+      {order.status === 'delivered' && order.returnEligible !== false && !order.returnRequest && (
         <ReturnRequestModal
           open={returnModalOpen}
           onClose={() => setReturnModalOpen(false)}
