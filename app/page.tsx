@@ -26,7 +26,7 @@ export default function Home() {
       {/* <DesignersShowcase /> */}
       <CinematicBanner />
       <TestimonialsSection />
-      {/* <BlogSection /> */}
+      <BlogSection />
       <InstagramGallery />
       <NewsletterSection />
       <Footer />

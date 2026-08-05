@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import DOMPurify from 'isomorphic-dompurify';
 import Footer from '@/components/layout/Footer';
 import { getPublicBlogBySlug, PublicBlogDetail } from '@/lib/api/blogs';
 import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
@@ -101,7 +102,7 @@ export default function BlogClient({ params }: { params: Promise<{ slug: string 
           )}
           <div
             className="prose prose-neutral dark:prose-invert max-w-none font-light"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
           />
 
           <div className="text-center mt-16 pt-8 border-t border-border">
