@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { getPublicCollections, PublicCollection } from '@/lib/api/collections';
+import { safeImageSrc } from '@/lib/utils';
 import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
 import ProductLoadError from '@/components/products/ProductLoadError';
 
@@ -99,7 +100,7 @@ export default function CollectionsPage() {
                       {/* Image */}
                       <div className="relative h-96 rounded-2xl overflow-hidden mb-6 shadow-premium hover:shadow-premium-lg transition-all duration-500 bg-card">
                         <Image
-                          src={collection.image || '/placeholder.jpg'}
+                          src={safeImageSrc(collection.image)}
                           alt={collection.name}
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-700"

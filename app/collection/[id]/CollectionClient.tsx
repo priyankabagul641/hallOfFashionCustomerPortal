@@ -11,6 +11,7 @@ import {
   CollectionProduct,
   PublicCollection,
 } from '@/lib/api/collections';
+import { safeImageSrc } from '@/lib/utils';
 import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
 import ProductLoadError from '@/components/products/ProductLoadError';
 import { ChevronLeft, Tag } from 'lucide-react';
@@ -66,7 +67,7 @@ export default function CollectionPage({ params }: { params: Promise<{ id: strin
   const title = collection?.name ?? 'Collection';
   const description =
     collection?.description ?? 'Explore this curated collection of premium men\'s fashion.';
-  const banner = collection?.image || FALLBACK_BANNER;
+  const banner = safeImageSrc(collection?.image, FALLBACK_BANNER);
 
   return (
     <main className="min-h-screen bg-background">

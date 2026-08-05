@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getPublicCollections, PublicCollection } from '@/lib/api/collections';
+import { safeImageSrc } from '@/lib/utils';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -76,7 +77,7 @@ export default function CollectionsGrid() {
                 >
                   {/* Image */}
                   <Image
-                    src={collection.image || '/placeholder.jpg'}
+                    src={safeImageSrc(collection.image)}
                     alt={collection.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-700"
