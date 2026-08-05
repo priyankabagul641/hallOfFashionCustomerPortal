@@ -60,7 +60,7 @@ export default function WeddingCollection() {
                 Royal Sherwani Collection
               </h3>
               <p className="text-white/80 mb-4">Handcrafted regal sherwanis for the modern groom</p>
-              <Link href="/collection/sherwanis">
+              <Link href="/shop?category=sherwani">
                 <button className="flex items-center gap-2 text-accent hover:text-white transition-colors">
                   Explore Now <ArrowRight size={18} />
                 </button>
@@ -85,7 +85,7 @@ export default function WeddingCollection() {
                 Indo-Western Collection
               </h3>
               <p className="text-white/80 mb-4">Contemporary bandhgalas and Nehru jackets</p>
-              <Link href="/collection/indo-western">
+              <Link href="/shop?category=indo-western">
                 <button className="flex items-center gap-2 text-accent hover:text-white transition-colors">
                   Discover <ArrowRight size={18} />
                 </button>

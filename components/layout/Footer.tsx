@@ -6,10 +6,10 @@ import { Mail, Phone, MapPin } from 'lucide-react';
 
 const footerLinks = {
   Collections: [
-    { label: 'Sherwanis', href: '/collection/sherwanis' },
-    { label: 'Indo-Western', href: '/collection/indo-western' },
-    { label: 'Kurtas', href: '/collection/kurtas' },
-    { label: 'Blazers & Suits', href: '/collection/blazers' },
+    { label: 'Sherwanis', href: '/shop?category=sherwani' },
+    { label: 'Indo-Western', href: '/shop?category=indo-western' },
+    { label: 'Kurtas', href: '/shop?category=kurta' },
+    { label: 'Blazers & Suits', href: '/shop?category=blazer' },
   ],
   Designers: [
     { label: 'All Designers', href: '/designers' },

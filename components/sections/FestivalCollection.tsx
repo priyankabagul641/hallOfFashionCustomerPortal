@@ -108,7 +108,7 @@ export default function FestivalCollection() {
 
         {/* CTA */}
         <motion.div variants={itemVariants} className="text-center">
-          <Link href="/collection/festive">
+          <Link href="/shop?category=men">
             <button className="inline-block px-8 py-4 bg-accent text-primary font-semibold rounded-xl hover:shadow-premium-lg transition-all hover:scale-105">
               View Full Festival Collection
             </button>

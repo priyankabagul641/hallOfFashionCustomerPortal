@@ -16,17 +16,17 @@ import { useNotifications } from '@/hooks/use-notifications';
 
 const COLLECTIONS_MENU = {
   categories: [
-    { label: 'Sherwanis', desc: 'Royal wedding wear', href: '/collection/sherwanis', image: '/products/Indo-western-collection.png' },
-    { label: 'Kurta Sets', desc: 'Festive & casual styles', href: '/collection/kurtas', image: '/products/Occassion-featured.png' },
-    { label: 'Bandhgalas', desc: 'Modern ceremonial tailoring', href: '/collection/indo-western', image: '/products/Indo-western-collection.png' },
-    { label: 'Blazers & Suits', desc: 'Premium formal wear', href: '/collection/blazers', image: '/products/Occassion-featured.png' },
-    { label: 'Nehru Jackets', desc: 'Refined layering', href: '/collection/indo-western', image: '/products/Indo-western-collection.png' },
-    { label: 'Accessories', desc: 'Complete your look', href: '/collection/accessories', image: '/products/Occassion-featured.png' },
+    { label: 'Sherwanis', desc: 'Royal wedding wear', href: '/shop?category=sherwani', image: '/products/Indo-western-collection.png' },
+    { label: 'Kurta Sets', desc: 'Festive & casual styles', href: '/shop?category=kurta', image: '/products/Occassion-featured.png' },
+    { label: 'Bandhgalas', desc: 'Modern ceremonial tailoring', href: '/shop?category=indo-western', image: '/products/Indo-western-collection.png' },
+    { label: 'Blazers & Suits', desc: 'Premium formal wear', href: '/shop?category=blazer', image: '/products/Occassion-featured.png' },
+    { label: 'Nehru Jackets', desc: 'Refined layering', href: '/shop?category=indo-western', image: '/products/Indo-western-collection.png' },
+    { label: 'Accessories', desc: 'Complete your look', href: '/shop?category=accessories', image: '/products/Occassion-featured.png' },
   ],
   occasions: [
-    { label: 'Wedding', href: '/collection/groom', image: '/products/Indo-western-collection.png' },
-    { label: 'Festive', href: '/collection/festive', image: '/products/Occassion-featured.png' },
-    { label: 'Formal', href: '/collection/blazers', image: '/products/Indo-western-collection.png' },
+    { label: 'Wedding', href: '/shop?category=groom', image: '/products/Indo-western-collection.png' },
+    { label: 'Festive', href: '/shop?category=festive', image: '/products/Occassion-featured.png' },
+    { label: 'Formal', href: '/shop?category=blazer', image: '/products/Indo-western-collection.png' },
     { label: 'Casual', href: '/shop', image: '/products/Occassion-featured.png' },
   ],
   featured: {
@@ -39,10 +39,10 @@ const COLLECTIONS_MENU = {
 
 const OCCASIONS_MENU = {
   categories: [
-    { label: 'Wedding', desc: 'Sherwanis and groomswear', href: '/collection/groom', image: '/products/Indo-western-collection.png' },
-    { label: 'Reception', desc: 'Bandhgalas and tuxedos', href: '/collection/indo-western', image: '/products/Occassion-featured.png' },
-    { label: 'Cocktail', desc: 'Statement evening wear', href: '/collection/groom', image: '/products/Indo-western-collection.png' },
-    { label: 'Festive', desc: 'Kurta sets and jackets', href: '/collection/festive', image: '/products/Occassion-featured.png' },
+    { label: 'Wedding', desc: 'Sherwanis and groomswear', href: '/shop?category=groom', image: '/products/Indo-western-collection.png' },
+    { label: 'Reception', desc: 'Bandhgalas and tuxedos', href: '/shop?category=indo-western', image: '/products/Occassion-featured.png' },
+    { label: 'Cocktail', desc: 'Statement evening wear', href: '/shop?category=groom', image: '/products/Indo-western-collection.png' },
+    { label: 'Festive', desc: 'Kurta sets and jackets', href: '/shop?category=festive', image: '/products/Occassion-featured.png' },
     { label: 'Workwear', desc: 'Smart tailoring for every day', href: '/shop', image: '/products/Indo-western-collection.png' },
     { label: 'Casual', desc: 'Lightweight modern essentials', href: '/shop', image: '/products/Occassion-featured.png' },
   ],
@@ -379,8 +379,8 @@ export default function Navbar() {
                   { label: 'Shop All', href: '/shop' },
                   { label: 'Collections', href: '/collections' },
                   // { label: 'Designers', href: '/designers' },
-                  { label: 'Wedding', href: '/collection/groom' },
-                  { label: 'Festive', href: '/collection/festive' },
+                  { label: 'Wedding', href: '/shop?category=groom' },
+                  { label: 'Festive', href: '/shop?category=festive' },
                   // { label: '✂️  Customization Studio', href: '/customize' },
                   { label: '🧵  Tailor Marketplace', href: '/tailors' },
                   { label: '📐  Measurements', href: '/measurements' },

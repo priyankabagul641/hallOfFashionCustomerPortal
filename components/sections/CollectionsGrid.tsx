@@ -1,39 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-
-const collections = [
-  {
-    id: 1,
-    name: 'Sherwanis',
-    image: '/products/sherwani-collection.png',
-    items: '48 pieces',
-    description: 'Royal wedding sherwanis',
-  },
-  {
-    id: 2,
-    name: 'Indo-Western',
-    image: '/products/Indo-western-collection.png',
-    items: '62 pieces',
-    description: 'Bandhgalas & Nehru jackets',
-  },
-  {
-    id: 3,
-    name: 'Kurtas',
-    image: '/products/kurtas-collection.png',
-    items: '55 pieces',
-    description: 'Festive silk kurtas',
-  },
-  {
-    id: 4,
-    name: 'Blazers & Suits',
-    image: '/products/blazer-suits-collection.png',
-    items: '34 pieces',
-    description: 'Premium formal wear',
-  },
-];
+import { getPublicCollections, PublicCollection } from '@/lib/api/collections';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -56,6 +27,18 @@ const itemVariants = {
 };
 
 export default function CollectionsGrid() {
+  const [collections, setCollections] = useState<PublicCollection[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPublicCollections()
+      .then((res) => { if (!cancelled) setCollections(res.data.collections.slice(0, 4)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  if (collections.length === 0) return null;
+
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
       <div className="max-w-7xl mx-auto">
@@ -71,7 +54,7 @@ export default function CollectionsGrid() {
             Collections
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-light">
-            Explore our curated collections of premium men&apos;s ethnic and designer wear, 
+            Explore our curated collections of premium men&apos;s ethnic and designer wear,
             each telling a story of heritage and excellence
           </p>
         </motion.div>
@@ -89,11 +72,11 @@ export default function CollectionsGrid() {
               <Link href={`/collection/${collection.id}`}>
                 <motion.div
                   whileHover={{ y: -8 }}
-                  className="group relative h-96 md:h-80 rounded-2xl overflow-hidden cursor-pointer shadow-premium hover:shadow-premium-lg transition-all duration-500"
+                  className="group relative h-96 md:h-80 rounded-2xl overflow-hidden cursor-pointer shadow-premium hover:shadow-premium-lg transition-all duration-500 bg-card"
                 >
                   {/* Image */}
                   <Image
-                    src={collection.image}
+                    src={collection.image || '/placeholder.jpg'}
                     alt={collection.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-700"
@@ -112,13 +95,13 @@ export default function CollectionsGrid() {
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-px bg-accent" />
                         <span className="text-accent text-sm font-medium">
-                          {collection.items}
+                          {collection.productCount} pieces
                         </span>
                       </div>
                       <h3 className="text-3xl font-playfair font-bold text-white mb-2">
                         {collection.name}
                       </h3>
-                      <p className="text-white/70 text-sm font-light mb-2">
+                      <p className="text-white/70 text-sm font-light mb-2 line-clamp-2">
                         {collection.description}
                       </p>
                       <p className="text-white/70 text-sm font-light">
