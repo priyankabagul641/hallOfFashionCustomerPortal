@@ -10,8 +10,14 @@ import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
 export default function CartPage() {
   const { cartItems, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
 
-  const tax = cartTotal * 0.18;
-  const shipping = cartTotal > 10000 ? 0 : 500;
+  const tax = cartItems.reduce(
+    (sum, item) => sum + (item.price * item.quantity * (item.gstRate ?? 0)) / 100,
+    0
+  );
+  const shipping = cartItems.reduce(
+    (sum, item) => sum + (item.shippingCharge ?? 0) * item.quantity,
+    0
+  );
   const finalTotal = cartTotal + tax + shipping;
 
   if (cartItems.length === 0) {

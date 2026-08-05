@@ -94,6 +94,8 @@ export default function FeaturedProducts() {
       size: defaultSize,
       color: defaultColor,
       designer: product.designer,
+      gstRate: product.gstRate,
+      shippingCharge: product.shippingCharge,
     });
 
     toast.success(`${product.name} added to cart!`, {

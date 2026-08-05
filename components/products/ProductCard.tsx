@@ -20,6 +20,8 @@ interface ProductCardProps {
     reviews: number;
     stock?: number;
     sizes?: string[];
+    gstRate?: number;
+    shippingCharge?: number;
   };
 }
 
@@ -70,6 +72,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       size: defaultSize,
       color: defaultColor,
       designer: product.designer,
+      gstRate: product.gstRate,
+      shippingCharge: product.shippingCharge,
     });
 
     toast.success(`${product.name} added to cart!`, {

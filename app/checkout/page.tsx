@@ -62,8 +62,14 @@ export default function CheckoutPage() {
   }
 
   // Estimate shown only while filling shipping/payment steps, before real totals exist.
-  const estimatedTax = cartTotal * 0.18;
-  const estimatedShipping = 500;
+  const estimatedTax = cartItems.reduce(
+    (sum, item) => sum + (item.price * item.quantity * (item.gstRate ?? 0)) / 100,
+    0
+  );
+  const estimatedShipping = cartItems.reduce(
+    (sum, item) => sum + (item.shippingCharge ?? 0) * item.quantity,
+    0
+  );
   const estimatedTotal = cartTotal + estimatedTax + estimatedShipping;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

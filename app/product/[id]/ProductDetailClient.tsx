@@ -183,6 +183,8 @@ export default function ProductDetailPage() {
       color: selectedColorOption.name,
       designer: product.designer,
       isCustomSize: selectedSize === 'custom',
+      gstRate: product.gstRate,
+      shippingCharge: product.shippingCharge,
       measurementProfileId: selectedMeasurementProfile?.id,
       measurementProfileName: selectedMeasurementProfile?.name,
       measurementType: selectedMeasurementProfile?.measurementType,

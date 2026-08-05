@@ -18,6 +18,8 @@ export interface Product {
   reviews: number;
   deliveryTime: string;
   description: string;
+  gstRate: number;
+  shippingCharge: number;
 }
 
 export interface ProductVariant {

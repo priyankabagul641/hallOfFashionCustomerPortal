@@ -18,6 +18,8 @@ export interface CartItem {
   size: string;
   color?: string;
   designer: string;
+  gstRate?: number;
+  shippingCharge?: number;
   isCustomSize?: boolean;
   measurementProfileId?: string;
   measurementProfileName?: string;
