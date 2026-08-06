@@ -524,7 +524,18 @@ function OccasionsPanel({ close, activeIndex, onIndexChange }: { close: () => vo
 
   const featuredItem = occasions[activeIndex] ?? occasions[0];
 
-  if (occasions.length === 0) return null;
+  if (occasions.length === 0) {
+    return (
+      <div className="bg-card rounded-2xl shadow-premium-lg border border-border overflow-hidden w-[420px] p-6 text-center">
+        <p className="text-sm text-muted-foreground">No occasions available yet — check back soon.</p>
+        <Link href="/shop" onClick={close}>
+          <button className="mt-4 px-5 py-2 bg-luxury-black text-luxury-ivory text-xs font-semibold rounded-lg hover:bg-accent hover:text-luxury-black transition-all">
+            Browse All Products
+          </button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card rounded-2xl shadow-premium-lg border border-border overflow-hidden w-[680px]">
