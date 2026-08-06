@@ -11,6 +11,8 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/use-notifications';
+import { getOccasions, PublicOccasion } from '@/lib/api/products';
+import { safeImageSrc } from '@/lib/utils';
 
 // ─── Menu data ────────────────────────────────────────────────────────────────
 
@@ -37,21 +39,9 @@ const COLLECTIONS_MENU = {
   },
 };
 
-const OCCASIONS_MENU = {
-  categories: [
-    { label: 'Wedding', desc: 'Sherwanis and groomswear', href: '/shop?category=groom', image: '/products/Indo-western-collection.png' },
-    { label: 'Reception', desc: 'Bandhgalas and tuxedos', href: '/shop?category=indo-western', image: '/products/Occassion-featured.png' },
-    { label: 'Cocktail', desc: 'Statement evening wear', href: '/shop?category=groom', image: '/products/Indo-western-collection.png' },
-    { label: 'Festive', desc: 'Kurta sets and jackets', href: '/shop?category=festive', image: '/products/Occassion-featured.png' },
-    { label: 'Workwear', desc: 'Smart tailoring for every day', href: '/shop', image: '/products/Indo-western-collection.png' },
-    { label: 'Casual', desc: 'Lightweight modern essentials', href: '/shop', image: '/products/Occassion-featured.png' },
-  ],
-  featured: {
-    title: 'Occasion Edit',
-    desc: 'Build a look for every men\'s celebration',
-    href: '/collections',
-    image: '/products/Occassion-featured.png',
-  },
+const OCCASIONS_FEATURED = {
+  href: '/collections',
+  desc: 'Build a look for every men\'s celebration',
 };
 
 const DESIGNERS_MENU = [
@@ -522,8 +512,19 @@ function DesignersPanel({ close }: { close: () => void }) {
 }
 
 function OccasionsPanel({ close, activeIndex, onIndexChange }: { close: () => void; activeIndex: number; onIndexChange: (index: number) => void }) {
-  const featuredItem = OCCASIONS_MENU.categories[activeIndex] ?? OCCASIONS_MENU.categories[0];
-  const featuredDescription = featuredItem?.desc ?? 'Tailored for this occasion';
+  const [occasions, setOccasions] = useState<PublicOccasion[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getOccasions()
+      .then((res) => { if (!cancelled) setOccasions(res.data.occasions); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const featuredItem = occasions[activeIndex] ?? occasions[0];
+
+  if (occasions.length === 0) return null;
 
   return (
     <div className="bg-card rounded-2xl shadow-premium-lg border border-border overflow-hidden w-[680px]">
@@ -531,41 +532,29 @@ function OccasionsPanel({ close, activeIndex, onIndexChange }: { close: () => vo
         <div className="col-span-2 p-6 border-r border-border">
           <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-4">Shop by Occasion</p>
           <div className="grid grid-cols-2 gap-1">
-            {OCCASIONS_MENU.categories.map((occ, index) => (
-              <Link key={occ.label} href={occ.href} onClick={close}>
+            {occasions.map((occ, index) => (
+              <Link key={occ.id} href={`/shop?occasion=${encodeURIComponent(occ.name)}`} onClick={close}>
                 <div
                   onMouseEnter={() => onIndexChange(index)}
                   className="flex flex-col p-3 rounded-xl hover:bg-accent/8 group cursor-pointer transition-colors"
                 >
-                  <span className="text-sm font-semibold group-hover:text-accent transition-colors">{occ.label}</span>
-                  <span className="text-xs text-muted-foreground mt-0.5">{occ.desc}</span>
+                  <span className="text-sm font-semibold group-hover:text-accent transition-colors">{occ.name}</span>
+                  <span className="text-xs text-muted-foreground mt-0.5">{occ.productCount}+ Styles</span>
                 </div>
               </Link>
             ))}
-          </div>
-          <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Tailored for Men</p>
-            <div className="flex gap-2 flex-wrap">
-              {['Groom', 'Reception', 'Sangeet', 'Office Edit'].map((chip) => (
-                <Link key={chip} href="/shop" onClick={close}>
-                  <span className="px-3 py-1.5 border border-border rounded-full text-xs font-medium hover:border-accent hover:text-accent transition-colors cursor-pointer">
-                    {chip}
-                  </span>
-                </Link>
-              ))}
-            </div>
           </div>
         </div>
 
         <div className="p-4 flex flex-col">
           <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Featured</p>
-          <Link href={OCCASIONS_MENU.featured.href} onClick={close} className="flex-1 flex flex-col">
+          <Link href={OCCASIONS_FEATURED.href} onClick={close} className="flex-1 flex flex-col">
             <div className="relative rounded-xl overflow-hidden flex-1 min-h-32">
-              <img src={featuredItem.image} alt="" className="w-full h-full object-cover" />
+              <img src={safeImageSrc(featuredItem?.imageUrl)} alt="" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
               <div className="absolute bottom-3 left-3 right-3">
-                <p className="text-white text-xs font-bold leading-tight">{featuredItem.label}</p>
-                <p className="text-white/70 text-[10px] mt-0.5">{featuredDescription}</p>
+                <p className="text-white text-xs font-bold leading-tight">{featuredItem?.name}</p>
+                <p className="text-white/70 text-[10px] mt-0.5">{OCCASIONS_FEATURED.desc}</p>
               </div>
             </div>
           </Link>

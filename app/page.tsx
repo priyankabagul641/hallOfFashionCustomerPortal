@@ -13,12 +13,14 @@ import InstagramGallery from '@/components/sections/InstagramGallery';
 import NewsletterSection from '@/components/sections/NewsletterSection';
 import Footer from '@/components/layout/Footer';
 import CategorySection from '@/components/sections/CategorySection';
+import OccasionSection from '@/components/sections/OccasionSection';
 
 export default function Home() {
   return (
     <main className="bg-background text-foreground pt-28 md:pt-20">
       <HeroCarousel />
       <CategorySection />
+      <OccasionSection />
       <CollectionsGrid />
       <FeaturedProducts />
       <WeddingCollection />
