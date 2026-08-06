@@ -45,7 +45,7 @@ export default function TestimonialsSection() {
           variants={containerVariants}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          {testimonials.map((testimonial) => (
+          {testimonials.slice(0, 4).map((testimonial) => (
             <motion.div
               key={testimonial.id}
               variants={itemVariants}
