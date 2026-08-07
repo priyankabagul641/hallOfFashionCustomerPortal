@@ -13,7 +13,7 @@ export default function OccasionSection() {
   useEffect(() => {
     let cancelled = false;
     getOccasions()
-      .then((res) => { if (!cancelled) setOccasions(res.data.occasions.slice(0, 5)); })
+      .then((res) => { if (!cancelled) setOccasions(res.data.occasions.filter((o) => o.parentId === null).slice(0, 5)); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);

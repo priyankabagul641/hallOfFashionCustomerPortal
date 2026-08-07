@@ -20,7 +20,7 @@ export default function FestivalCollection() {
     let cancelled = false;
     getOccasions()
       .then((res) => {
-        const festive = res.data.occasions.find((o) => /festiv/i.test(o.name));
+        const festive = res.data.occasions.find((o) => o.parentId === null && /festiv/i.test(o.name));
         if (cancelled) return;
         if (!festive) {
           setFestivalProducts([]);
