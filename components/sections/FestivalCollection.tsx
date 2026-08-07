@@ -3,24 +3,40 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { getProducts, Product } from '@/lib/api/products';
+import { getProducts, getOccasions, Product } from '@/lib/api/products';
 import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
 import ProductLoadError from '@/components/products/ProductLoadError';
 
+const FALLBACK_OCCASION_NAME = 'Festive';
+
 export default function FestivalCollection() {
   const [festivalProducts, setFestivalProducts] = useState<Product[]>([]);
+  const [occasionName, setOccasionName] = useState(FALLBACK_OCCASION_NAME);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  // ponytail: occasion isn't on the public list endpoint yet, so this just
-  // pulls the men's category newest-first as a festive-ish stand-in.
   useEffect(() => {
     let cancelled = false;
-    getProducts({ category: 'men', sortBy: 'newest', pageSize: 6 })
-      .then((res) => { if (!cancelled) { setFestivalProducts(res.data.products); setError(null); } })
-      .catch(() => { if (!cancelled) setError('Failed to load products. Please refresh.'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+    getOccasions()
+      .then((res) => {
+        const festive = res.data.occasions.find((o) => /festiv/i.test(o.name));
+        if (cancelled) return;
+        if (!festive) {
+          setFestivalProducts([]);
+          setLoading(false);
+          return;
+        }
+        setOccasionName(festive.name);
+        // ponytail: public list endpoint doesn't support occasion filtering
+        // yet — 400s until backend adds it. Degrade to empty state, not an
+        // error banner, since that's a missing feature, not a real failure.
+        getProducts({ occasion: festive.name, sortBy: 'newest', pageSize: 6 })
+          .then((r) => { if (!cancelled) { setFestivalProducts(r.data.products); setError(null); } })
+          .catch(() => { if (!cancelled) setFestivalProducts([]); })
+          .finally(() => { if (!cancelled) setLoading(false); });
+      })
+      .catch(() => { if (!cancelled) { setError('Failed to load products. Please refresh.'); setLoading(false); } });
     return () => { cancelled = true; };
   }, [reloadKey]);
 
@@ -108,7 +124,7 @@ export default function FestivalCollection() {
 
         {/* CTA */}
         <motion.div variants={itemVariants} className="text-center">
-          <Link href="/shop?category=men">
+          <Link href={`/shop?occasion=${encodeURIComponent(occasionName)}`}>
             <button className="inline-block px-8 py-4 bg-accent text-primary font-semibold rounded-xl hover:shadow-premium-lg transition-all hover:scale-105">
               View Full Festival Collection
             </button>

@@ -41,6 +41,10 @@ export interface ProductFilters {
   search?: string;
   category?: string;
   subcategory?: string;
+  // ponytail: public list endpoint doesn't accept this yet (whitelist-only
+  // DTO) — passing it 400s until backend adds occasion filtering. Callers
+  // must catch and degrade to an empty result, not an error banner.
+  occasion?: string;
   minPrice?: number;
   maxPrice?: number;
   page?: number;

@@ -559,9 +559,9 @@ function OccasionsPanel({ close, activeIndex, onIndexChange }: { close: () => vo
 
         <div className="p-4 flex flex-col">
           <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Featured</p>
-          <Link href={OCCASIONS_FEATURED.href} onClick={close} className="flex-1 flex flex-col">
-            <div className="relative rounded-xl overflow-hidden flex-1 min-h-32">
-              <img src={safeImageSrc(featuredItem?.imageUrl)} alt="" className="w-full h-full object-cover" />
+          <Link href={OCCASIONS_FEATURED.href} onClick={close} className="flex flex-col">
+            <div className="relative rounded-xl overflow-hidden w-full h-56">
+              <img src={safeImageSrc(featuredItem?.imageUrl)} alt="" className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
               <div className="absolute bottom-3 left-3 right-3">
                 <p className="text-white text-xs font-bold leading-tight">{featuredItem?.name}</p>

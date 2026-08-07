@@ -1,56 +1,25 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, MessageCircle } from 'lucide-react';
-
-const instagramPosts = [
-  {
-    id: 1,
-    image: '/products/sherwani-2-1.jpg',
-    title: 'Sherwanis',
-    subtitle: 'Royal Wedding Collection',
-    count: '145+ Styles',
-  },
-  {
-    id: 2,
-    image: '/products/Indo-western.png',
-    title: 'Indo Western',
-    subtitle: 'Contemporary Ethnic Wear',
-    count: '96+ Styles',
-  },
-  {
-    id: 3,
-    image: '/products/kurta-2-1.jpg',
-    title: 'Kurtas',
-    subtitle: 'Festive & Occasion Wear',
-    count: '178+ Styles',
-  },
-  {
-    id: 4,
-    image: '/products/Blazer.png',
-    title: 'Blazers',
-    subtitle: 'Luxury Tailored Fits',
-    count: '68+ Styles',
-  },
-  {
-    id: 5,
-    image: '/products/suits.png',
-    title: 'Suits',
-    subtitle: 'Discover luxury sherwanis, suits, blazers and handcrafted Indo-western collections.',
-    count: '59+ Styles',
-  },
-  {
-    id: 6,
-    image: '/products/wedding%20wear.png',
-    title: 'Wedding Wear',
-    subtitle: 'Exclusive Groom Edit',
-    count: '124+ Styles',
-  },
-];
+import { getCategories, PublicCategory } from '@/lib/api/products';
 
 export default function InstagramGallery() {
+  const [categories, setCategories] = useState<PublicCategory[]>([]);
+
+  useEffect(() => {
+    getCategories()
+      .then((res) => {
+        const sorted = [...res.data.categories]
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .slice(0, 6);
+        setCategories(sorted);
+      })
+      .catch(() => setCategories([]));
+  }, []);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -63,6 +32,11 @@ export default function InstagramGallery() {
     hidden: { opacity: 0, scale: 0.9 },
     visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } },
   };
+
+  const getCategoryLink = (category: PublicCategory) =>
+    `/shop?category=${encodeURIComponent(category.name)}`;
+
+  if (categories.length < 6) return null;
 
   return (
     <section className="py-12 px-4 md:px-8 lg:px-16 bg-background">
@@ -98,140 +72,101 @@ export default function InstagramGallery() {
         >
           {/* Left Side */}
           <div className="col-span-3 flex flex-col gap-4">
+            {[categories[0], categories[1]].map((category) => (
+              <Link key={category.id} href={getCategoryLink(category)} className="flex-1">
+                <motion.div
+                  whileHover={{ y: -6 }}
+                  className="group relative h-full rounded-[28px] overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all duration-500"
+                >
+                  {category.imageUrl && (
+                    <Image
+                      src={category.imageUrl}
+                      alt={category.name}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                  )}
 
-            <motion.div
-              whileHover={{ y: -6 }}
-              className="group relative flex-1 rounded-[28px] overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all duration-500"
-            >
-              <Image
-                src={instagramPosts[0].image}
-                alt="{instagramPosts[0].title}"
-                fill
-                className="object-cover group-hover:scale-110 transition-transform duration-700"
-              />
+                  <div className="absolute inset-0 bg-black/25" />
 
-              <div className="absolute inset-0 bg-black/25" />
+                  <div className="absolute bottom-5 left-5">
+                    <h3 className="text-white font-playfair text-2xl font-bold drop-shadow-lg">
+                      {category.name}
+                    </h3>
 
-              <div className="absolute bottom-5 left-5">
-                <h3 className="text-white font-playfair text-2xl font-bold drop-shadow-lg">
-                  {instagramPosts[0].title}
-                </h3>
-
-                <p className="text-white/80 text-sm">
-                  {instagramPosts[0].count}
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ y: -6 }}
-              className="group relative flex-1 rounded-[28px] overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all duration-500"
-            >
-              <Image
-                src={instagramPosts[1].image}
-                alt={instagramPosts[1].title}
-                fill
-                className="object-cover group-hover:scale-110 transition-transform duration-700"
-              />
-
-              <div className="absolute inset-0 bg-black/25" />
-
-              <div className="absolute bottom-5 left-5">
-                <h3 className="text-white font-playfair text-2xl font-bold drop-shadow-lg">
-                  {instagramPosts[1].title}
-                </h3>
-
-                <p className="text-white/80 text-sm">
-                  {instagramPosts[1].count}
-                </p>
-              </div>
-            </motion.div>
+                    <p className="text-white/80 text-sm">
+                      {category.productCount}+ Styles
+                    </p>
+                  </div>
+                </motion.div>
+              </Link>
+            ))}
           </div>
 
           {/* Center Hero */}
-          <motion.div
-            whileHover={{ y: -8 }}
-            className="group relative col-span-6 rounded-[36px] overflow-hidden cursor-pointer shadow-[0_25px_70px_rgba(0,0,0,0.18)] hover:shadow-[0_40px_100px_rgba(0,0,0,0.30)] transition-all duration-500"
-          >
-            <Image
-              src={instagramPosts[5].image}
-              alt={instagramPosts[5].title}
-              fill
-              className="object-cover group-hover:scale-110 transition-transform duration-1000"
-            />
+          <Link href={getCategoryLink(categories[5])} className="col-span-6">
+            <motion.div
+              whileHover={{ y: -8 }}
+              className="group relative h-full rounded-[36px] overflow-hidden cursor-pointer shadow-[0_25px_70px_rgba(0,0,0,0.18)] hover:shadow-[0_40px_100px_rgba(0,0,0,0.30)] transition-all duration-500"
+            >
+              {categories[5].imageUrl && (
+                <Image
+                  src={categories[5].imageUrl}
+                  alt={categories[5].name}
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform duration-1000"
+                />
+              )}
 
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+              <div className="absolute bottom-8 left-8">
+                <p className="text-accent tracking-[0.3em] uppercase text-xs mb-3">
+                  Hall Of Fashion
+                </p>
 
-            <div className="absolute bottom-8 left-8">
-              <p className="text-accent tracking-[0.3em] uppercase text-xs mb-3">
-                Hall Of Fashion
-              </p>
+                <h2 className="font-playfair text-5xl font-bold text-white mb-4 drop-shadow-xl">
+                  {categories[5].name}
+                </h2>
 
-              <h2 className="font-playfair text-4xl lg:text-5xl font-bold text-white mb-4">
-                Premium Menswear
-              </h2>
-
-              <h2 className="font-playfair text-5xl font-bold text-white mb-4 drop-shadow-xl">
-                {instagramPosts[5].title}
-              </h2>
-
-              <p className="text-white/90 text-lg max-w-md">
-                {instagramPosts[5].subtitle}
-              </p>
-
-              <p className="text-accent mt-4 font-medium">
-                {instagramPosts[5].count}
-              </p>
-            </div>
-          </motion.div>
+                <p className="text-accent mt-4 font-medium">
+                  {categories[5].productCount}+ Styles
+                </p>
+              </div>
+            </motion.div>
+          </Link>
 
           {/* Right Side */}
           <div className="col-span-3 flex flex-col gap-4">
+            {[categories[3], categories[4]].map((category) => (
+              <Link key={category.id} href={getCategoryLink(category)} className="flex-1">
+                <motion.div
+                  whileHover={{ y: -6 }}
+                  className="group relative h-full rounded-[28px] overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all duration-500"
+                >
+                  {category.imageUrl && (
+                    <Image
+                      src={category.imageUrl}
+                      alt={category.name}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                  )}
 
-            <motion.div
-              whileHover={{ y: -6 }}
-              className="group relative flex-1 rounded-[28px] overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all duration-500"
-            >
-              <Image
-                src={instagramPosts[3].image}
-                alt={instagramPosts[3].title}
-                fill
-                className="object-cover group-hover:scale-110 transition-transform duration-700"
-              />
+                  <div className="absolute inset-0 bg-black/25" />
 
-              <div className="absolute bottom-5 left-5">
-                <h3 className="text-white font-playfair text-2xl font-bold drop-shadow-lg">
-                  {instagramPosts[3].title}
-                </h3>
+                  <div className="absolute bottom-5 left-5">
+                    <h3 className="text-white font-playfair text-2xl font-bold drop-shadow-lg">
+                      {category.name}
+                    </h3>
 
-                <p className="text-white/80 text-sm">
-                  {instagramPosts[3].count}
-                </p>
-              </div>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ y: -6 }}
-              className="group relative flex-1 rounded-[28px] overflow-hidden cursor-pointer shadow-[0_15px_40px_rgba(0,0,0,0.15)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.25)] transition-all duration-500"
-            >
-              <Image
-                src={instagramPosts[4].image}
-                alt={instagramPosts[4].title}
-                fill
-                className="object-cover group-hover:scale-110 transition-transform duration-700"
-              />
-
-              <div className="absolute bottom-5 left-5">
-                <h3 className="text-white font-playfair text-2xl font-bold drop-shadow-lg">
-                  {instagramPosts[4].title}
-                </h3>
-
-                <p className="text-white/80 text-sm">
-                  {instagramPosts[4].count}
-                </p>
-              </div>
-            </motion.div>
+                    <p className="text-white/80 text-sm">
+                      {category.productCount}+ Styles
+                    </p>
+                  </div>
+                </motion.div>
+              </Link>
+            ))}
           </div>
         </motion.div>
       </motion.div>
