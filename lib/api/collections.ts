@@ -6,7 +6,10 @@ export interface PublicCollection {
   description: string | null;
   image: string | null;
   productCount: number;
+  section?: CollectionSection | null;
 }
+
+export type CollectionSection = "occasions" | "premium_mens" | "groom_counter" | "festive";
 
 export interface CollectionProduct {
   id: string;
@@ -31,8 +34,11 @@ export interface CollectionProductsFilters {
   pageSize?: number;
 }
 
-export function getPublicCollections() {
-  return apiGet<{ collections: PublicCollection[] }>("/collections/public");
+export function getPublicCollections(section?: CollectionSection) {
+  return apiGet<{ collections: PublicCollection[] }>(
+    "/collections/public",
+    section ? { section } : undefined,
+  );
 }
 
 export function getPublicCollection(id: string) {

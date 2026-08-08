@@ -4,7 +4,7 @@ import HeroCarousel from '@/components/sections/HeroCarousel';
 import CollectionsGrid from '@/components/sections/CollectionsGrid';
 import FeaturedProducts from '@/components/sections/FeaturedProducts';
 import WeddingCollection from '@/components/sections/WeddingCollection';
-import FestivalCollection from '@/components/sections/FestivalCollection';
+import SectionCollections from '@/components/sections/SectionCollections';
 import DesignersShowcase from '@/components/sections/DesignersShowcase';
 import CinematicBanner from '@/components/sections/CinematicBanner';
 import TestimonialsSection from '@/components/sections/TestimonialsSection';
@@ -24,7 +24,24 @@ export default function Home() {
       <CollectionsGrid />
       <FeaturedProducts />
       <WeddingCollection />
-      <FestivalCollection />
+      <SectionCollections
+        section="premium_mens"
+        eyebrow="Premium Men's Collection"
+        title="Refined For Him"
+        subtitle="Tailored ethnic and designer wear for the modern man"
+      />
+      <SectionCollections
+        section="groom_counter"
+        eyebrow="Groom Counter"
+        title="The Groom's Edit"
+        subtitle="Statement pieces for the big day, curated for the groom"
+      />
+      <SectionCollections
+        section="festive"
+        eyebrow="Festive Collection"
+        title="Celebrate In Style"
+        subtitle="Elevate your festive moments with our exclusive collection"
+      />
       {/* <DesignersShowcase /> */}
       <CinematicBanner />
       <TestimonialsSection />
