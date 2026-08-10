@@ -29,12 +29,6 @@ export default function Home() {
         subtitle="Tailored ethnic and designer wear for the modern man"
       />
       <SectionCollections
-        section="groom_counter"
-        eyebrow="Groom Counter"
-        title="The Groom's Edit"
-        subtitle="Statement pieces for the big day, curated for the groom"
-      />
-      <SectionCollections
         section="festive"
         eyebrow="Festive Collection"
         title="Celebrate In Style"
