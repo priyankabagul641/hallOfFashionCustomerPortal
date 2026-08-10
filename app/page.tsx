@@ -13,6 +13,7 @@ import NewsletterSection from '@/components/sections/NewsletterSection';
 import Footer from '@/components/layout/Footer';
 import CategorySection from '@/components/sections/CategorySection';
 import OccasionSection from '@/components/sections/OccasionSection';
+import WeddingCollection from '@/components/sections/WeddingCollection';
 
 export default function Home() {
   return (
@@ -28,12 +29,7 @@ export default function Home() {
         title="Refined For Him"
         subtitle="Tailored ethnic and designer wear for the modern man"
       />
-      <SectionCollections
-        section="groom_counter"
-        eyebrow="Groom Counter"
-        title="The Groom's Edit"
-        subtitle="Statement pieces for the big day, curated for the groom"
-      />
+      <WeddingCollection />
       <SectionCollections
         section="festive"
         eyebrow="Festive Collection"
