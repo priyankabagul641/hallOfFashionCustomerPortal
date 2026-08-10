@@ -3,7 +3,6 @@
 import HeroCarousel from '@/components/sections/HeroCarousel';
 import CollectionsGrid from '@/components/sections/CollectionsGrid';
 import FeaturedProducts from '@/components/sections/FeaturedProducts';
-import WeddingCollection from '@/components/sections/WeddingCollection';
 import SectionCollections from '@/components/sections/SectionCollections';
 import DesignersShowcase from '@/components/sections/DesignersShowcase';
 import CinematicBanner from '@/components/sections/CinematicBanner';
@@ -23,7 +22,6 @@ export default function Home() {
       <OccasionSection />
       <CollectionsGrid />
       <FeaturedProducts />
-      <WeddingCollection />
       <SectionCollections
         section="premium_mens"
         eyebrow="Premium Men's Collection"

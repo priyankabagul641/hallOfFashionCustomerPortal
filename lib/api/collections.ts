@@ -9,7 +9,7 @@ export interface PublicCollection {
   section?: CollectionSection | null;
 }
 
-export type CollectionSection = "occasions" | "premium_mens" | "groom_counter" | "festive";
+export type CollectionSection = "occasions" | "premium_mens" | "groom_counter" | "festive" | "collections";
 
 export interface CollectionProduct {
   id: string;

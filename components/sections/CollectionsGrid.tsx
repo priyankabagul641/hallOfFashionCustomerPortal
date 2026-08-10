@@ -32,7 +32,7 @@ export default function CollectionsGrid() {
 
   useEffect(() => {
     let cancelled = false;
-    getPublicCollections()
+    getPublicCollections("collections")
       .then((res) => { if (!cancelled) setCollections(res.data.collections.slice(0, 4)); })
       .catch(() => {});
     return () => { cancelled = true; };
