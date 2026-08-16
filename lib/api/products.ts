@@ -87,7 +87,6 @@ export interface PublicOccasion {
   displayOrder: number;
   isActive: boolean;
   productCount: number;
-  parentId: string | null;
 }
 
 export function getOccasions() {
