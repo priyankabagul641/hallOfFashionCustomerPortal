@@ -11,38 +11,16 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/use-notifications';
-import { getOccasions, PublicOccasion } from '@/lib/api/products';
-import { safeImageSrc } from '@/lib/utils';
+import { getPublicCollections, CollectionSection, PublicCollection } from '@/lib/api/collections';
 
 // ─── Menu data ────────────────────────────────────────────────────────────────
 
-const COLLECTIONS_MENU = {
-  categories: [
-    { label: 'Sherwanis', desc: 'Royal wedding wear', href: '/shop?category=sherwani', image: '/products/Indo-western-collection.png' },
-    { label: 'Kurta Sets', desc: 'Festive & casual styles', href: '/shop?category=kurta', image: '/products/Occassion-featured.png' },
-    { label: 'Bandhgalas', desc: 'Modern ceremonial tailoring', href: '/shop?category=indo-western', image: '/products/Indo-western-collection.png' },
-    { label: 'Blazers & Suits', desc: 'Premium formal wear', href: '/shop?category=blazer', image: '/products/Occassion-featured.png' },
-    { label: 'Nehru Jackets', desc: 'Refined layering', href: '/shop?category=indo-western', image: '/products/Indo-western-collection.png' },
-    { label: 'Accessories', desc: 'Complete your look', href: '/shop?category=accessories', image: '/products/Occassion-featured.png' },
-  ],
-  occasions: [
-    { label: 'Wedding', href: '/shop?category=groom', image: '/products/Indo-western-collection.png' },
-    { label: 'Festive', href: '/shop?category=festive', image: '/products/Occassion-featured.png' },
-    { label: 'Formal', href: '/shop?category=blazer', image: '/products/Indo-western-collection.png' },
-    { label: 'Casual', href: '/shop', image: '/products/Occassion-featured.png' },
-  ],
-  featured: {
-    title: 'New In Menswear',
-    desc: 'Heritage Groom 2025 Collection',
-    href: '/collections',
-    image: '/products/Indo-western-collection.png',
-  },
-};
-
-const OCCASIONS_FEATURED = {
-  href: '/collections',
-  desc: 'Build a look for every men\'s celebration',
-};
+const COLLECTIONS_SECTIONS: { key: CollectionSection; label: string }[] = [
+  { key: 'premium_mens', label: "Premium Men's Collection" },
+  { key: 'groom_counter', label: 'Groom Counter' },
+  { key: 'festive', label: 'Festive Collection' },
+  { key: 'collections', label: 'Collections' },
+];
 
 const DESIGNERS_MENU = [
   { name: 'House of Aryav', location: 'New Delhi', href: '/designers', initial: 'A' },
@@ -96,7 +74,6 @@ const menuItems = [
   { label: 'New In', href: '/shop' },
   { label: 'Collections', key: 'Collections' },
   // { label: 'Designers', key: 'Designers' },
-  { label: 'Occasions', key: 'Occasions' },
   { label: 'Services', key: 'Services' },
   { label: 'Blog', href: '/blog' },
   { label: 'Sale', href: '/shop' },
@@ -109,7 +86,6 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
   const [activeCollectionsIndex, setActiveCollectionsIndex] = useState(0);
-  const [activeOccasionsIndex, setActiveOccasionsIndex] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { cartCount, wishlistCount } = useCart();
@@ -126,7 +102,6 @@ export default function Navbar() {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setActiveMegaMenu(key);
     if (key === 'Collections') setActiveCollectionsIndex(0);
-    if (key === 'Occasions') setActiveOccasionsIndex(0);
   };
 
   const closeMenu = () => {
@@ -205,13 +180,6 @@ export default function Navbar() {
                         />
                       )}
                       {item.key === 'Designers' && <DesignersPanel close={() => setActiveMegaMenu(null)} />}
-                      {item.key === 'Occasions' && (
-                        <OccasionsPanel
-                          close={() => setActiveMegaMenu(null)}
-                          activeIndex={activeOccasionsIndex}
-                          onIndexChange={setActiveOccasionsIndex}
-                        />
-                      )}
                       {item.key === 'Services' && <ServicesPanel close={() => setActiveMegaMenu(null)} />}
                     </motion.div>
                   )}
@@ -412,64 +380,63 @@ export default function Navbar() {
 // ─── Sub-panels ───────────────────────────────────────────────────────────────
 
 function CollectionsPanel({ close, activeIndex, onIndexChange }: { close: () => void; activeIndex: number; onIndexChange: (index: number) => void }) {
-  const highlightItems = [
-    ...COLLECTIONS_MENU.categories.map((item) => ({ ...item, type: 'category' as const })),
-    ...COLLECTIONS_MENU.occasions.map((item) => ({ ...item, type: 'occasion' as const }))
-  ];
-  const featuredItem = highlightItems[activeIndex] ?? highlightItems[0];
-  const featuredDescription = 'desc' in featuredItem ? featuredItem.desc : 'Curated for this edit';
+  const [collectionsBySection, setCollectionsBySection] = useState<Record<string, PublicCollection[] | undefined>>({});
+  const activeSection = COLLECTIONS_SECTIONS[activeIndex] ?? COLLECTIONS_SECTIONS[0];
+
+  useEffect(() => {
+    if (collectionsBySection[activeSection.key] !== undefined) return;
+    let cancelled = false;
+    getPublicCollections(activeSection.key)
+      .then((res) => { if (!cancelled) setCollectionsBySection((prev) => ({ ...prev, [activeSection.key]: res.data.collections })); })
+      .catch(() => { if (!cancelled) setCollectionsBySection((prev) => ({ ...prev, [activeSection.key]: [] })); });
+    return () => { cancelled = true; };
+  }, [activeSection.key, collectionsBySection]);
+
+  const activeCollections = collectionsBySection[activeSection.key];
 
   return (
     <div className="bg-card rounded-2xl shadow-premium-lg border border-border overflow-hidden w-[680px]">
       <div className="grid grid-cols-3 gap-0">
-        {/* Categories */}
-        <div className="col-span-2 p-6 border-r border-border">
-          <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-4">Shop by Category</p>
-          <div className="grid grid-cols-2 gap-1">
-            {COLLECTIONS_MENU.categories.map((cat, index) => (
-              <Link key={cat.label} href={cat.href} onClick={close}>
-                <div
-                  onMouseEnter={() => onIndexChange(index)}
-                  className="flex flex-col p-3 rounded-xl hover:bg-accent/8 group cursor-pointer transition-colors"
-                >
-                  <span className="text-sm font-semibold group-hover:text-accent transition-colors">{cat.label}</span>
-                  <span className="text-xs text-muted-foreground mt-0.5">{cat.desc}</span>
-                </div>
-              </Link>
+        {/* Sections */}
+        <div className="col-span-1 p-4 border-r border-border">
+          <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Collections</p>
+          <div className="flex flex-col gap-1">
+            {COLLECTIONS_SECTIONS.map((section, index) => (
+              <div
+                key={section.key}
+                onMouseEnter={() => onIndexChange(index)}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+                  index === activeIndex ? 'bg-accent/10 text-accent' : 'hover:bg-accent/8'
+                }`}
+              >
+                <span className="text-sm font-semibold">{section.label}</span>
+                <ArrowRight size={12} className={index === activeIndex ? 'opacity-100' : 'opacity-0'} />
+              </div>
             ))}
-          </div>
-          <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Shop by Occasion</p>
-            <div className="flex gap-2 flex-wrap">
-              {COLLECTIONS_MENU.occasions.map((occ, index) => (
-                <Link key={occ.label} href={occ.href} onClick={close}>
-                  <span
-                    onMouseEnter={() => onIndexChange(COLLECTIONS_MENU.categories.length + index)}
-                    className="px-3 py-1.5 border border-border rounded-full text-xs font-medium hover:border-accent hover:text-accent transition-colors cursor-pointer"
-                  >
-                    {occ.label}
-                  </span>
-                </Link>
-              ))}
-            </div>
           </div>
         </div>
 
-        {/* Featured */}
-        <div className="p-4 flex flex-col">
-          <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Featured</p>
-          <Link href={COLLECTIONS_MENU.featured.href} onClick={close} className="flex-1 flex flex-col">
-            <div className="relative rounded-xl overflow-hidden flex-1 min-h-32">
-              <img src={featuredItem.image} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-              <div className="absolute bottom-3 left-3 right-3">
-                <p className="text-white text-xs font-bold leading-tight">{featuredItem.label}</p>
-                <p className="text-white/70 text-[10px] mt-0.5">{featuredDescription}</p>
-              </div>
+        {/* Flyout */}
+        <div className="col-span-2 p-6">
+          <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-4">{activeSection.label}</p>
+          {activeCollections === undefined ? (
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          ) : activeCollections.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No collections yet</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-1">
+              {activeCollections.map((col) => (
+                <Link key={col.id} href={`/collection/${col.id}`} onClick={close}>
+                  <div className="flex flex-col p-3 rounded-xl hover:bg-accent/8 group cursor-pointer transition-colors">
+                    <span className="text-sm font-semibold group-hover:text-accent transition-colors">{col.name}</span>
+                    <span className="text-xs text-muted-foreground mt-0.5">{col.productCount}+ Styles</span>
+                  </div>
+                </Link>
+              ))}
             </div>
-          </Link>
+          )}
           <Link href="/collections" onClick={close}>
-            <button className="mt-3 w-full py-2 bg-luxury-black text-luxury-ivory text-xs font-semibold rounded-lg hover:bg-accent hover:text-luxury-black transition-all flex items-center justify-center gap-1">
+            <button className="mt-4 w-full py-2 bg-luxury-black text-luxury-ivory text-xs font-semibold rounded-lg hover:bg-accent hover:text-luxury-black transition-all flex items-center justify-center gap-1">
               All Collections <ArrowRight size={12} />
             </button>
           </Link>
@@ -503,75 +470,6 @@ function DesignersPanel({ close }: { close: () => void }) {
           <Link href="/designers" onClick={close}>
             <button className="w-full py-2 border border-border rounded-xl text-xs font-semibold hover:border-accent hover:text-accent transition-colors mt-1 flex items-center justify-center gap-1">
               View All Designers <ArrowRight size={12} />
-            </button>
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OccasionsPanel({ close, activeIndex, onIndexChange }: { close: () => void; activeIndex: number; onIndexChange: (index: number) => void }) {
-  const [occasions, setOccasions] = useState<PublicOccasion[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    getOccasions()
-      .then((res) => { if (!cancelled) setOccasions(res.data.occasions); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
-
-  const featuredItem = occasions[activeIndex] ?? occasions[0];
-
-  if (occasions.length === 0) {
-    return (
-      <div className="bg-card rounded-2xl shadow-premium-lg border border-border overflow-hidden w-[420px] p-6 text-center">
-        <p className="text-sm text-muted-foreground">No occasions available yet — check back soon.</p>
-        <Link href="/shop" onClick={close}>
-          <button className="mt-4 px-5 py-2 bg-luxury-black text-luxury-ivory text-xs font-semibold rounded-lg hover:bg-accent hover:text-luxury-black transition-all">
-            Browse All Products
-          </button>
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-card rounded-2xl shadow-premium-lg border border-border overflow-hidden w-[680px]">
-      <div className="grid grid-cols-3 gap-0">
-        <div className="col-span-2 p-6 border-r border-border">
-          <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-4">Shop by Occasion</p>
-          <div className="grid grid-cols-2 gap-1">
-            {occasions.map((occ, index) => (
-              <Link key={occ.id} href={`/shop?occasion=${encodeURIComponent(occ.name)}`} onClick={close}>
-                <div
-                  onMouseEnter={() => onIndexChange(index)}
-                  className="flex flex-col p-3 rounded-xl hover:bg-accent/8 group cursor-pointer transition-colors"
-                >
-                  <span className="text-sm font-semibold group-hover:text-accent transition-colors">{occ.name}</span>
-                  <span className="text-xs text-muted-foreground mt-0.5">{occ.productCount}+ Styles</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-4 flex flex-col">
-          <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-3">Featured</p>
-          <Link href={OCCASIONS_FEATURED.href} onClick={close} className="flex flex-col">
-            <div className="relative rounded-xl overflow-hidden w-full h-56">
-              <img src={safeImageSrc(featuredItem?.imageUrl)} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-              <div className="absolute bottom-3 left-3 right-3">
-                <p className="text-white text-xs font-bold leading-tight">{featuredItem?.name}</p>
-                <p className="text-white/70 text-[10px] mt-0.5">{OCCASIONS_FEATURED.desc}</p>
-              </div>
-            </div>
-          </Link>
-          <Link href="/shop" onClick={close}>
-            <button className="mt-3 w-full py-2 bg-luxury-black text-luxury-ivory text-xs font-semibold rounded-lg hover:bg-accent hover:text-luxury-black transition-all flex items-center justify-center gap-1">
-              Explore Occasion Wear <ArrowRight size={12} />
             </button>
           </Link>
         </div>
