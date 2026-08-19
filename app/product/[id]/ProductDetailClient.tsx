@@ -8,9 +8,11 @@ import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { getProduct, ProductDetail } from '@/lib/api/products';
+import { getProductReviews, submitProductReview, Review } from '@/lib/api/reviews';
 import { ApiError } from '@/lib/api-client';
 import ProductLoadError from '@/components/products/ProductLoadError';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/context/AuthContext';
 
 import { MeasurementProfile, summarizeMeasurementProfile } from '@/data/measurements';
 import MeasurementProfilePickerModal from '@/components/measurements/MeasurementProfilePickerModal';
@@ -21,6 +23,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
+  const { isAuthenticated } = useAuth();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,58 +43,68 @@ export default function ProductDetailPage() {
   const [showReviews, setShowReviews] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Record<number, boolean>>({});
 
-  const demoReviews = [
-    {
-      name: "Rahul Sharma",
-      rating: 5,
-      date: "2 days ago",
-      comment: "Amazing fit and premium quality. Perfect for wedding occasions."
-    },
-    {
-      name: "Amit Verma",
-      rating: 5,
-      date: "1 week ago",
-      comment: "Fabric quality is excellent and delivery was on time."
-    },
-    {
-      name: "Karan Singh",
-      rating: 4,
-      date: "2 weeks ago",
-      comment: "Looks exactly like the photos. Highly recommended."
-    },
-    {
-      name: "Rohit Mehta",
-      rating: 5,
-      date: "3 weeks ago",
-      comment: "Received many compliments. Worth every rupee."
-    },
-    {
-      name: "Arjun Kapoor",
-      rating: 5,
-      date: "1 month ago",
-      comment: "Stitching and finishing are premium. The entire look feels luxurious."
-    },
-    {
-      name: "Sahil Jain",
-      rating: 4,
-      date: "1 month ago",
-      comment: "Comfortable to wear for long hours and the color tone is excellent."
-    },
-    {
-      name: "Nikhil Mehra",
-      rating: 5,
-      date: "2 months ago",
-      comment: "True to size and the embroidery quality exceeded expectations."
-    },
-    {
-      name: "Vivek Malhotra",
-      rating: 5,
-      date: "2 months ago",
-      comment: "A standout piece for celebrations. The detailing is genuinely impressive."
-    }
-  ];
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const REVIEWS_PAGE_SIZE = 10;
 
-  const visibleReviews = demoReviews.slice(0, 4);
+  const [showWriteReview, setShowWriteReview] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState<string | null>(null);
+
+  const visibleReviews = reviews.slice(0, 4);
+
+  const loadReviews = (productId: string, page: number) => {
+    setReviewsLoading(true);
+    getProductReviews(productId, { page, pageSize: REVIEWS_PAGE_SIZE, sortBy: 'newest' })
+      .then((res) => {
+        setReviews((prev) => (page === 1 ? res.data.reviews : [...prev, ...res.data.reviews]));
+        setReviewsTotal(res.data.meta.total);
+        setReviewsPage(page);
+      })
+      .catch(() => {
+        if (page === 1) {
+          setReviews([]);
+          setReviewsTotal(0);
+        }
+      })
+      .finally(() => setReviewsLoading(false));
+  };
+
+  const handleLoadMoreReviews = () => {
+    if (!product) return;
+    loadReviews(product.id, reviewsPage + 1);
+  };
+
+  const handleSubmitReview = () => {
+    if (!product) return;
+    if (!reviewComment.trim()) {
+      setReviewSubmitError('Please write a comment.');
+      return;
+    }
+    setReviewSubmitting(true);
+    setReviewSubmitError(null);
+    submitProductReview(product.id, {
+      rating: reviewRating,
+      title: reviewTitle.trim() || undefined,
+      comment: reviewComment.trim(),
+    })
+      .then(() => {
+        toast.success('Review submitted! It will appear after moderation.');
+        setShowWriteReview(false);
+        setReviewTitle('');
+        setReviewComment('');
+        setReviewRating(5);
+      })
+      .catch((err: ApiError) => {
+        setReviewSubmitError(err?.message ?? 'Failed to submit review.');
+      })
+      .finally(() => setReviewSubmitting(false));
+  };
 
   useEffect(() => {
     const productId = params.id as string;
@@ -116,6 +129,7 @@ export default function ProductDetailPage() {
         setSelectedSize(sizesForFirstColor[0] ?? '');
         setSelectedImage(0);
         setLoadedImages({});
+        loadReviews(foundProduct.id, 1);
       })
       .catch((err: ApiError) => {
         if (cancelled) return;
@@ -762,42 +776,68 @@ export default function ProductDetailPage() {
                   <h3 className="text-xl font-bold">
                     Customer Reviews
                   </h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowReviews(true)}
-                    className="inline-flex items-center rounded-full border border-border px-4 py-2 text-sm font-semibold text-accent transition-colors hover:border-accent hover:bg-accent/5"
-                  >
-                    View more
-                  </button>
-                </div>
-
-                <div className="space-y-5">
-                  {visibleReviews.map((review, idx) => (
-                    <div
-                      key={idx}
-                      className="border border-border rounded-xl p-4 bg-card/40"
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => (isAuthenticated ? setShowWriteReview(true) : toast.info('Sign in to write a review'))}
+                      className="inline-flex items-center rounded-full border border-accent px-4 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent/5"
                     >
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="bg-green-600 text-white px-2 py-1 rounded text-xs font-semibold">
-                          {review.rating} ★
-                        </span>
-
-                        <div>
-                          <span className="font-semibold block">
-                            {review.name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {review.date}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {review.comment}
-                      </p>
-                    </div>
-                  ))}
+                      Write a Review
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowReviews(true)}
+                      className="inline-flex items-center rounded-full border border-border px-4 py-2 text-sm font-semibold text-accent transition-colors hover:border-accent hover:bg-accent/5"
+                    >
+                      View more
+                    </button>
+                  </div>
                 </div>
+
+                {reviewsLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-20 w-full rounded-xl" />
+                    <Skeleton className="h-20 w-full rounded-xl" />
+                  </div>
+                ) : visibleReviews.length === 0 ? (
+                  <p className="text-sm text-muted-foreground border border-dashed border-border rounded-xl p-4 bg-card/40">
+                    No reviews yet — be the first to review this product.
+                  </p>
+                ) : (
+                  <div className="space-y-5">
+                    {visibleReviews.map((review) => (
+                      <div
+                        key={review.id}
+                        className="border border-border rounded-xl p-4 bg-card/40"
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="bg-green-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                            {review.rating} ★
+                          </span>
+
+                          <div>
+                            <span className="font-semibold block">
+                              {review.customerName}
+                              {review.verifiedPurchase && (
+                                <span className="ml-2 text-xs text-accent font-normal">Verified Purchase</span>
+                              )}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        {review.title && (
+                          <p className="text-sm font-semibold mb-1">{review.title}</p>
+                        )}
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {review.comment}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
             </motion.div>
@@ -848,21 +888,125 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="p-6 overflow-y-auto max-h-[calc(85vh-80px)] space-y-4">
-                {demoReviews.map((review, idx) => (
-                  <div key={idx} className="rounded-xl border border-border p-4 bg-card/40">
+                {reviews.length === 0 && !reviewsLoading && (
+                  <p className="text-sm text-muted-foreground">
+                    No reviews yet — be the first to review this product.
+                  </p>
+                )}
+                {reviews.map((review) => (
+                  <div key={review.id} className="rounded-xl border border-border p-4 bg-card/40">
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <div>
-                        <p className="font-semibold">{review.name}</p>
-                        <p className="text-xs text-muted-foreground">{review.date}</p>
+                        <p className="font-semibold">
+                          {review.customerName}
+                          {review.verifiedPurchase && (
+                            <span className="ml-2 text-xs text-accent font-normal">Verified Purchase</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{new Date(review.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div className="flex items-center gap-1 rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">
                         <Star size={12} className="fill-white text-white" />
                         {review.rating}
                       </div>
                     </div>
+                    {review.title && <p className="text-sm font-semibold mb-1">{review.title}</p>}
                     <p className="text-sm text-muted-foreground leading-relaxed">{review.comment}</p>
                   </div>
                 ))}
+
+                {reviews.length < reviewsTotal && (
+                  <button
+                    type="button"
+                    onClick={handleLoadMoreReviews}
+                    disabled={reviewsLoading}
+                    className="w-full py-3 rounded-lg border border-border text-sm font-semibold hover:bg-card transition-colors disabled:opacity-50"
+                  >
+                    {reviewsLoading ? 'Loading...' : 'Load more'}
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {showWriteReview && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-50"
+              onClick={() => setShowWriteReview(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-50 w-full sm:w-[480px] max-w-[calc(100vw-2rem)] bg-background rounded-2xl shadow-2xl overflow-hidden border border-border"
+            >
+              <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-card/40">
+                <h2 className="text-xl font-bold">Write a Review</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowWriteReview(false)}
+                  className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-card transition-colors"
+                  aria-label="Close write review"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="text-sm font-semibold mb-2 block">Rating</label>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <button key={i} type="button" onClick={() => setReviewRating(i + 1)}>
+                        <Star
+                          size={24}
+                          className={i < reviewRating ? 'fill-accent text-accent' : 'text-gray-300'}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold mb-2 block">Title (optional)</label>
+                  <input
+                    type="text"
+                    value={reviewTitle}
+                    onChange={(e) => setReviewTitle(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    placeholder="Summarize your experience"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold mb-2 block">Your Review</label>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    placeholder="Share details about fit, fabric, and delivery"
+                  />
+                </div>
+
+                {reviewSubmitError && (
+                  <p className="text-sm text-red-500">{reviewSubmitError}</p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleSubmitReview}
+                  disabled={reviewSubmitting}
+                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold disabled:opacity-50"
+                >
+                  {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                </button>
               </div>
             </motion.div>
           </>
