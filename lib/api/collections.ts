@@ -19,6 +19,10 @@ export interface CollectionProduct {
   category: string;
   productType: string;
   price: number;
+  mrp?: number | null;
+  discountedPrice?: number | null;
+  salePrice?: number | null;
+  saleDiscountPercent?: number | null;
   status: string;
   stock: number;
   lowStockThreshold: number;

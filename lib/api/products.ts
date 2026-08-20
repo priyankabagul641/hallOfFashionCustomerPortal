@@ -13,6 +13,10 @@ export interface Product {
   category: string;
   subcategory: string;
   price: number;
+  mrp?: number | null;
+  discountedPrice?: number | null;
+  salePrice?: number | null;
+  saleDiscountPercent?: number | null;
   images: string[];
   rating: number;
   reviews: number;
@@ -20,6 +24,29 @@ export interface Product {
   description: string;
   gstRate: number;
   shippingCharge: number;
+}
+
+// Best price to show for a product card/detail: sale price and marketing
+// discount are mutually exclusive at order time, but if both are present for
+// display purposes, show whichever is lower rather than stacking badges.
+// mrp/percentOff fall back to a plain price comparison — never recompute the
+// discounted/sale price itself, only the strike-through/badge derived from it.
+export function getDisplayPrice(
+  product: Pick<Product, "price" | "mrp" | "discountedPrice" | "salePrice">
+) {
+  const mrp = product.mrp ?? product.price;
+  const { discountedPrice, salePrice } = product;
+
+  const effectivePrice =
+    salePrice != null && (discountedPrice == null || salePrice <= discountedPrice)
+      ? salePrice
+      : discountedPrice ?? product.price;
+
+  return {
+    effectivePrice,
+    mrp,
+    percentOff: effectivePrice < mrp ? Math.round(((mrp - effectivePrice) / mrp) * 100) : undefined,
+  };
 }
 
 export interface ProductVariant {

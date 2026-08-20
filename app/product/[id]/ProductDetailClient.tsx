@@ -7,7 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { getProduct, ProductDetail } from '@/lib/api/products';
+import { getProduct, getDisplayPrice, ProductDetail } from '@/lib/api/products';
 import { getProductReviews, submitProductReview, Review } from '@/lib/api/reviews';
 import { ApiError } from '@/lib/api-client';
 import ProductLoadError from '@/components/products/ProductLoadError';
@@ -145,6 +145,10 @@ export default function ProductDetailPage() {
     setReloadKey((k) => k + 1);
   };
 
+  const { effectivePrice, mrp, percentOff } = product
+    ? getDisplayPrice(product)
+    : { effectivePrice: 0, mrp: 0, percentOff: undefined };
+
   const isWishlisted = product ? isInWishlist(product.id) : false;
   const availableColors = product?.colorOptions?.length
     ? product.colorOptions.map((c) => ({ name: c.color, hex: c.colorCode || '#c8a56b', images: c.images }))
@@ -190,7 +194,8 @@ export default function ProductDetailPage() {
       productId: product.id,
       variantId,
       name: product.name,
-      price: product.price,
+      price: effectivePrice,
+      mrp: mrp !== effectivePrice ? mrp : undefined,
       quantity: quantity,
       image: activeImages[0] || product.images[0],
       size: selectedSize,
@@ -231,7 +236,8 @@ export default function ProductDetailPage() {
       addToWishlist({
         id: product.id,
         name: product.name,
-        price: product.price,
+        price: effectivePrice,
+        mrp: mrp !== effectivePrice ? mrp : undefined,
         image: product.images[0],
         designer: product.designer,
         gstRate: product.gstRate,
@@ -429,8 +435,20 @@ export default function ProductDetailPage() {
               <div className="space-y-2 pb-6 border-b border-border">
                 <div className="flex items-center gap-4">
                   <p className="text-3xl font-bold text-accent">
-                    ₹{product.price.toLocaleString()}
+                    ₹{effectivePrice.toLocaleString()}
                   </p>
+                  {mrp > effectivePrice && (
+                    <>
+                      <p className="text-xl text-muted-foreground line-through">
+                        ₹{mrp.toLocaleString()}
+                      </p>
+                      {percentOff !== undefined && percentOff > 0 && (
+                        <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                          {percentOff}% OFF
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {product.description}

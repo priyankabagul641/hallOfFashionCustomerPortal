@@ -13,6 +13,7 @@ export interface CartItem {
   variantId?: string;
   name: string;
   price: number;
+  mrp?: number;
   quantity: number;
   image: string;
   size: string;
@@ -32,6 +33,7 @@ export interface WishlistItem {
   id: string;
   name: string;
   price: number;
+  mrp?: number;
   image: string;
   designer: string;
   gstRate?: number;

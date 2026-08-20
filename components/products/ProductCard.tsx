@@ -7,13 +7,17 @@ import { useRouter } from 'next/navigation';
 import { Heart, ShoppingBag, Star } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import { getDisplayPrice } from '@/lib/api/products';
 
 interface ProductCardProps {
   product: {
     id: string;
     name: string;
     price: number;
-    discountPrice?: number;
+    mrp?: number | null;
+    discountedPrice?: number | null;
+    salePrice?: number | null;
+    saleDiscountPercent?: number | null;
     images: string[];
     designer: string;
     rating: number;
@@ -29,6 +33,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
   const isWishlisted = isInWishlist(product.id);
+  const { effectivePrice, mrp, percentOff } = getDisplayPrice(product);
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -41,7 +46,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       addToWishlist({
         id: product.id,
         name: product.name,
-        price: product.discountPrice || product.price,
+        price: effectivePrice,
         image: product.images[0],
         designer: product.designer,
         gstRate: product.gstRate,
@@ -68,7 +73,8 @@ export default function ProductCard({ product }: ProductCardProps) {
     addToCart({
       productId: product.id,
       name: product.name,
-      price: product.discountPrice || product.price,
+      price: effectivePrice,
+      mrp: mrp !== effectivePrice ? mrp : undefined,
       quantity: 1,
       image: product.images[0],
       size: defaultSize,
@@ -107,9 +113,9 @@ export default function ProductCard({ product }: ProductCardProps) {
             />
 
             {/* Discount Badge */}
-            {product.discountPrice && (
+            {percentOff !== undefined && percentOff > 0 && (
               <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                {Math.round(((product.price - product.discountPrice) / product.price) * 100)}% OFF
+                {percentOff}% OFF
               </div>
             )}
 
@@ -179,11 +185,11 @@ export default function ProductCard({ product }: ProductCardProps) {
 
             <div className="flex items-center gap-2">
               <p className="text-accent font-semibold text-lg">
-                ₹{product.discountPrice ? product.discountPrice.toLocaleString('en-IN') : product.price.toLocaleString('en-IN')}
+                ₹{effectivePrice.toLocaleString('en-IN')}
               </p>
-              {product.discountPrice && (
+              {mrp > effectivePrice && (
                 <p className="text-sm text-muted-foreground line-through">
-                  ₹{product.price.toLocaleString('en-IN')}
+                  ₹{mrp.toLocaleString('en-IN')}
                 </p>
               )}
             </div>

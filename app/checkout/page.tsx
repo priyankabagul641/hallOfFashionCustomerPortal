@@ -499,7 +499,12 @@ export default function CheckoutPage() {
                         <span className="text-muted-foreground">
                           {item.name} x {item.quantity}
                         </span>
-                        <span className="font-semibold">
+                        <span className="font-semibold flex items-center gap-2">
+                          {item.mrp && item.mrp > item.price && (
+                            <span className="text-muted-foreground line-through text-xs">
+                              ₹{(item.mrp * item.quantity).toLocaleString()}
+                            </span>
+                          )}
                           ₹{(item.price * item.quantity).toLocaleString()}
                         </span>
                       </div>

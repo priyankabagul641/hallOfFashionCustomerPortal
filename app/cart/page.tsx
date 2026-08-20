@@ -111,9 +111,21 @@ export default function CartPage() {
                             )}
                           </div>
                         )}
-                        <p className="text-accent font-bold text-lg">
-                          ₹{item.price.toLocaleString()}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-accent font-bold text-lg">
+                            ₹{item.price.toLocaleString()}
+                          </p>
+                          {item.mrp && item.mrp > item.price && (
+                            <>
+                              <p className="text-sm text-muted-foreground line-through">
+                                ₹{item.mrp.toLocaleString()}
+                              </p>
+                              <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
+                                {Math.round(((item.mrp - item.price) / item.mrp) * 100)}% OFF
+                              </span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
 
