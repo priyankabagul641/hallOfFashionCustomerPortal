@@ -22,7 +22,6 @@ const COLLECTIONS_SECTIONS: { key: CollectionSection; label: string }[] = [
   { key: 'groom_counter', label: 'Groom Counter' },
   { key: 'festive', label: 'Festive Collection' },
   { key: 'occasions', label: 'Occasions' },
-  { key: 'collections', label: 'Collections' },
 ];
 
 const DESIGNERS_MENU = [
