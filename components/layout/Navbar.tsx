@@ -19,6 +19,7 @@ const COLLECTIONS_SECTIONS: { key: CollectionSection; label: string }[] = [
   { key: 'premium_mens', label: "Premium Men's Collection" },
   { key: 'groom_counter', label: 'Groom Counter' },
   { key: 'festive', label: 'Festive Collection' },
+  { key: 'occasions', label: 'Occasions' },
   { key: 'collections', label: 'Collections' },
 ];
 
