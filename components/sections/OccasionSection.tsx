@@ -4,16 +4,16 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getOccasions, PublicOccasion } from '@/lib/api/products';
+import { getPublicCollections, PublicCollection } from '@/lib/api/collections';
 import { safeImageSrc } from '@/lib/utils';
 
 export default function OccasionSection() {
-  const [occasions, setOccasions] = useState<PublicOccasion[]>([]);
+  const [occasions, setOccasions] = useState<PublicCollection[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    getOccasions()
-      .then((res) => { if (!cancelled) setOccasions(res.data.occasions.filter((o) => !/festiv/i.test(o.name)).slice(0, 5)); })
+    getPublicCollections('occasions')
+      .then((res) => { if (!cancelled) setOccasions(res.data.collections.filter((o) => !/festiv/i.test(o.name)).slice(0, 5)); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
@@ -55,7 +55,7 @@ export default function OccasionSection() {
               className="group relative h-80 md:h-[34rem] rounded-2xl overflow-hidden cursor-pointer shadow-premium hover:shadow-premium-lg transition-all duration-500 bg-card"
             >
               <Image
-                src={safeImageSrc(featured.imageUrl)}
+                src={safeImageSrc(featured.image)}
                 alt={featured.name}
                 fill
                 className="object-cover group-hover:scale-110 transition-transform duration-700"
@@ -85,7 +85,7 @@ export default function OccasionSection() {
                   className="group relative h-40 md:h-64 rounded-2xl overflow-hidden cursor-pointer shadow-premium hover:shadow-premium-lg transition-all duration-500 bg-card"
                 >
                   <Image
-                    src={safeImageSrc(occasion.imageUrl)}
+                    src={safeImageSrc(occasion.image)}
                     alt={occasion.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-700"

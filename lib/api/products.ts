@@ -79,20 +79,6 @@ export function getCategories() {
   return apiGet<{ categories: PublicCategory[] }>("/products/public/categories");
 }
 
-export interface PublicOccasion {
-  id: string;
-  name: string;
-  slug: string;
-  imageUrl: string | null;
-  displayOrder: number;
-  isActive: boolean;
-  productCount: number;
-}
-
-export function getOccasions() {
-  return apiGet<{ occasions: PublicOccasion[] }>("/products/public/occasions");
-}
-
 // Pages through the full catalog. Only use where the caller genuinely needs
 // every product (shop listing, collection filtering, static params) — not
 // for bounded "show N" sections, which should keep using getProducts directly.

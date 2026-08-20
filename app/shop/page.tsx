@@ -14,7 +14,6 @@ import { SlidersHorizontal, Grid3X3, List, X, Search } from 'lucide-react';
 function ShopPageInner() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category') ?? undefined;
-  const initialOccasion = searchParams.get('occasion') ?? undefined;
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +27,7 @@ function ShopPageInner() {
     categories: initialCategory ? [initialCategory] : [],
     designers: [],
     fabrics: [],
-    occasions: initialOccasion ? [initialOccasion] : [],
+    occasions: [],
     ratings: [],
     priceMin: 0,
     priceMax: 150000,
