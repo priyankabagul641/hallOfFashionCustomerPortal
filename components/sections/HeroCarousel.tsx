@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useBanners } from '@/hooks/use-banners';
 import { resolveBannerHref } from '@/lib/banner-link';
@@ -80,30 +81,44 @@ export default function HeroCarousel() {
   const slideBody = (
     <>
       <div className="absolute inset-0 rounded-3xl overflow-hidden">
-        <motion.img
+        <motion.div
           key={`${banner.id}-desktop`}
-          src={banner.desktopImageUrl}
-          alt={banner.bannerTitle}
-          className="hidden md:block w-full h-full object-cover"
+          className="hidden md:block relative w-full h-full will-change-transform"
           initial={{ scale: 1 }}
           animate={{ scale: 1.08 }}
           transition={{
             duration: 6,
             ease: 'easeOut',
           }}
-        />
-        <motion.img
+        >
+          <Image
+            src={banner.desktopImageUrl}
+            alt={banner.bannerTitle}
+            fill
+            priority={activeSlide === 0}
+            sizes="100vw"
+            className="object-cover"
+          />
+        </motion.div>
+        <motion.div
           key={`${banner.id}-mobile`}
-          src={banner.mobileImageUrl || banner.desktopImageUrl}
-          alt={banner.bannerTitle}
-          className="block md:hidden w-full h-full object-cover"
+          className="block md:hidden relative w-full h-full will-change-transform"
           initial={{ scale: 1 }}
           animate={{ scale: 1.08 }}
           transition={{
             duration: 6,
             ease: 'easeOut',
           }}
-        />
+        >
+          <Image
+            src={banner.mobileImageUrl || banner.desktopImageUrl}
+            alt={banner.bannerTitle}
+            fill
+            priority={activeSlide === 0}
+            sizes="100vw"
+            className="object-cover"
+          />
+        </motion.div>
 
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/15" />
@@ -291,6 +306,7 @@ overflow-hidden
 shadow-[0_35px_80px_rgba(0,0,0,0.28)]
 border
 border-white/10
+will-change-transform
 "
         >
           {href ? (

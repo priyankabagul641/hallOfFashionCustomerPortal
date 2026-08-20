@@ -164,6 +164,7 @@ export default function CategorySection() {
                     top-1/2
                     -translate-x-1/2
                     -translate-y-1/2
+                    will-change-transform
                   "
                                 >
                                     <Link href={getCategoryLink(category)}>
@@ -187,6 +188,7 @@ export default function CategorySection() {
                                                     src={category.image}
                                                     alt={category.name}
                                                     fill
+                                                    sizes="180px"
                                                     className="
                           object-cover
                           transition-transform
