@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, ShoppingBag, Menu, X, Search, ChevronDown, User,
@@ -11,6 +12,7 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/use-notifications';
+import { safeImageSrc } from '@/lib/utils';
 import { getPublicCollections, CollectionSection, PublicCollection } from '@/lib/api/collections';
 
 // ─── Menu data ────────────────────────────────────────────────────────────────
@@ -425,12 +427,17 @@ function CollectionsPanel({ close, activeIndex, onIndexChange }: { close: () => 
           ) : activeCollections.length === 0 ? (
             <p className="text-sm text-muted-foreground">No collections yet</p>
           ) : (
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-3">
               {activeCollections.map((col) => (
                 <Link key={col.id} href={`/collection/${col.id}`} onClick={close}>
-                  <div className="flex flex-col p-3 rounded-xl hover:bg-accent/8 group cursor-pointer transition-colors">
-                    <span className="text-sm font-semibold group-hover:text-accent transition-colors">{col.name}</span>
-                    <span className="text-xs text-muted-foreground mt-0.5">{col.productCount}+ Styles</span>
+                  <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/8 group cursor-pointer transition-colors">
+                    <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      <Image src={safeImageSrc(col.image)} alt={col.name} fill className="object-cover" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold group-hover:text-accent transition-colors">{col.name}</span>
+                      <span className="text-xs text-muted-foreground mt-0.5">{col.productCount}+ Styles</span>
+                    </div>
                   </div>
                 </Link>
               ))}
