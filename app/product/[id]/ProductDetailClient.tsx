@@ -739,12 +739,6 @@ export default function ProductDetailPage() {
                       </p>
                     </div>
                     <div>
-                      <h3 className="font-bold mb-2">Occasion</h3>
-                      <p className="text-muted-foreground text-sm">
-                        {product.occasion.join(', ') || '—'}
-                      </p>
-                    </div>
-                    <div>
                       <h3 className="font-bold mb-2">Care Instructions</h3>
                       <ul className="text-muted-foreground text-sm space-y-1">
                         <li>• Dry clean only</li>

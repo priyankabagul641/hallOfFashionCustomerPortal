@@ -58,7 +58,6 @@ export interface ProductVariant {
 
 export interface ProductDetail extends Product {
   fabricDetails: string;
-  occasion: string[];
   tags: string[];
   colorOptions: ProductColorOption[];
   variants?: ProductVariant[];
