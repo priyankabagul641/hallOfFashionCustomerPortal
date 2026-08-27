@@ -149,7 +149,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<ApiRespo
 function withQuery(path: string, params?: Record<string, string | number | boolean>): string {
   if (!params) return path;
   const qs = new URLSearchParams(
-    Object.entries(params).map(([k, v]) => [k, String(v)])
+    Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null)
+      .map(([k, v]) => [k, String(v)])
   ).toString();
   return qs ? `${path}?${qs}` : path;
 }
