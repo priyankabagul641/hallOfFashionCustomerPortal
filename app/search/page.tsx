@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/products/ProductCard';
@@ -13,6 +13,31 @@ import { Product } from '@/lib/api/products';
 import { Search as SearchIcon } from 'lucide-react';
 
 const PAGE_SIZE = 24;
+
+function SearchInput({ initialQuery }: { initialQuery: string }) {
+  const router = useRouter();
+  const [value, setValue] = useState(initialQuery);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+  };
+
+  return (
+    <form onSubmit={submit} className="relative max-w-xl mt-6">
+      <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Search for products, brands, categories..."
+        className="w-full pl-11 pr-4 py-3.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+      />
+    </form>
+  );
+}
 
 function SearchPageInner() {
   const searchParams = useSearchParams();
@@ -68,7 +93,7 @@ function SearchPageInner() {
   }, [query, filters, sortBy]);
 
   useEffect(() => {
-    fetchPage(1, false);
+    queueMicrotask(() => fetchPage(1, false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, filters, sortBy, reloadKey]);
 
@@ -91,6 +116,7 @@ function SearchPageInner() {
             {!loading && query && (
               <p className="text-muted-foreground">{total} products found</p>
             )}
+            <SearchInput initialQuery={query} />
           </motion.div>
         </div>
       </div>
