@@ -78,7 +78,7 @@ const menuItems = [
   // { label: 'Designers', key: 'Designers' },
   { label: 'Services', key: 'Services' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Sale', href: '/shop' },
+  { label: 'Sale', href: '/sale' },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -339,6 +339,7 @@ export default function Navbar() {
                   { label: 'Shop All', href: '/shop' },
                   { label: 'Collections', href: '/collections' },
                   // { label: 'Designers', href: '/designers' },
+                  { label: 'Sale', href: '/sale' },
                   { label: 'Wedding', href: '/shop?category=groom' },
                   { label: 'Festive', href: '/shop?category=festive' },
                   // { label: '✂️  Customization Studio', href: '/customize' },
