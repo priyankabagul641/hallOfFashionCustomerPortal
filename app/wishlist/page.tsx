@@ -130,6 +130,11 @@ export default function WishlistPage() {
                         className="object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     </Link>
+                    {item.mrp !== undefined && item.mrp > item.price && (
+                      <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                        {Math.round(((item.mrp - item.price) / item.mrp) * 100)}% OFF
+                      </div>
+                    )}
 
                     {/* Overlay Actions */}
                     <motion.div
@@ -169,9 +174,16 @@ export default function WishlistPage() {
                         {item.name}
                       </h3>
 
-                      <p className="text-accent font-semibold text-lg">
-                        ₹{item.price.toLocaleString('en-IN')}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-accent font-semibold text-lg">
+                          ₹{item.price.toLocaleString('en-IN')}
+                        </p>
+                        {item.mrp !== undefined && item.mrp > item.price && (
+                          <p className="text-sm text-muted-foreground line-through">
+                            ₹{item.mrp.toLocaleString('en-IN')}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </Link>
 

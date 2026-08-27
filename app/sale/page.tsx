@@ -112,13 +112,15 @@ export default function SalePage() {
             <ProductGridSkeleton />
           ) : error ? (
             <ProductLoadError message={error} onRetry={handleRetry} />
-          ) : sales.length === 0 ? (
+          ) : sales.filter((s) => s.productCount > 0).length === 0 ? (
             <div className="text-center py-24">
-              <p className="font-playfair text-xl font-semibold mb-2">No active sales right now</p>
+              <p className="font-playfair text-xl font-semibold mb-2">No sales currently</p>
               <p className="text-muted-foreground text-sm">Check back soon for upcoming offers</p>
             </div>
           ) : (
-            sales.map((sale) => <SaleSection key={sale.id} sale={sale} />)
+            sales
+              .filter((s) => s.productCount > 0)
+              .map((sale) => <SaleSection key={sale.id} sale={sale} />)
           )}
         </div>
       </div>

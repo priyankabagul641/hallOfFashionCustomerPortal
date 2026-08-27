@@ -2,15 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Heart, ShoppingBag } from 'lucide-react';
 import { getProducts, Product } from '@/lib/api/products';
+import ProductCard from '@/components/products/ProductCard';
 import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
 import ProductLoadError from '@/components/products/ProductLoadError';
-import { useCart } from '@/context/CartContext';
-import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -33,8 +29,6 @@ const productVariants = {
 };
 
 export default function FeaturedProducts() {
-  const router = useRouter();
-  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,61 +46,6 @@ export default function FeaturedProducts() {
   const handleRetry = () => {
     setLoading(true);
     setReloadKey((k) => k + 1);
-  };
-
-  const handleWishlistToggle = (e: React.MouseEvent, product: Product) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id);
-      toast.info('Removed from wishlist');
-    } else {
-      addToWishlist({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.images[0],
-        designer: product.designer,
-        gstRate: product.gstRate,
-        shippingCharge: product.shippingCharge,
-      });
-      toast.success('Added to wishlist!', {
-        action: {
-          label: 'View Wishlist',
-          onClick: () => router.push('/wishlist'),
-        },
-      });
-    }
-  };
-
-  const handleQuickAddToCart = (e: React.MouseEvent, product: Product) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const defaultSize = 'M';
-    const defaultColor = 'Default';
-
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      quantity: 1,
-      image: product.images[0],
-      size: defaultSize,
-      color: defaultColor,
-      designer: product.designer,
-      gstRate: product.gstRate,
-      shippingCharge: product.shippingCharge,
-    });
-
-    toast.success(`${product.name} added to cart!`, {
-      description: `Size: ${defaultSize}`,
-      action: {
-        label: 'View Cart',
-        onClick: () => router.push('/cart'),
-      },
-    });
   };
 
   return (
@@ -148,70 +87,7 @@ export default function FeaturedProducts() {
         >
           {products.map((product) => (
             <motion.div key={product.id} variants={productVariants}>
-              <Link href={`/product/${product.id}`}>
-                <motion.div
-                  whileHover={{ y: -4 }}
-                  className="group cursor-pointer"
-                >
-                  {/* Product Image Container */}
-                  <div className="relative h-80 rounded-xl overflow-hidden mb-4 shadow-premium hover:shadow-premium-lg transition-all duration-500">
-                    <Image
-                      src={product.images[0] || '/placeholder.jpg'}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-
-                    {/* Overlay Actions */}
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      whileHover={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className="absolute inset-0 bg-black/40 flex items-end justify-between p-4"
-                    >
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => handleWishlistToggle(e, product)}
-                        className={`p-3 rounded-full backdrop-blur-md transition-colors ${
-                          isInWishlist(product.id)
-                            ? 'bg-accent text-luxury-black'
-                            : 'bg-white/20 text-white hover:bg-white/40'
-                        }`}
-                      >
-                        <Heart
-                          size={20}
-                          fill={isInWishlist(product.id) ? 'currentColor' : 'none'}
-                        />
-                      </motion.button>
-
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => handleQuickAddToCart(e, product)}
-                        className="p-3 rounded-full bg-white/20 text-white hover:bg-accent hover:text-luxury-black backdrop-blur-md transition-colors"
-                      >
-                        <ShoppingBag size={20} />
-                      </motion.button>
-                    </motion.div>
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground font-light">
-                      {product.designer}
-                    </p>
-                    <h3 className="font-playfair text-lg font-semibold text-foreground group-hover:text-accent transition-colors line-clamp-2">
-                      {product.name}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <p className="text-accent font-semibold">
-                        ₹{product.price.toLocaleString('en-IN')}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
+              <ProductCard product={product} />
             </motion.div>
           ))}
         </motion.div>

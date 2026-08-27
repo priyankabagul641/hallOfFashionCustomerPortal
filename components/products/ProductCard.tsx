@@ -47,6 +47,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         id: product.id,
         name: product.name,
         price: effectivePrice,
+        mrp: mrp !== effectivePrice ? mrp : undefined,
         image: product.images[0],
         designer: product.designer,
         gstRate: product.gstRate,
