@@ -10,9 +10,12 @@ export interface FilterState {
   designers: string[];
   fabrics: string[];
   occasions: string[];
+  sizes: string[];
+  colors: string[];
   ratings: number[];
   priceMin: number;
   priceMax: number;
+  inStockOnly: boolean;
 }
 
 interface FilterSidebarProps {
@@ -41,6 +44,25 @@ const STATIC_FILTER_SECTIONS = [
   // endpoint doesn't return those fields (only product detail does), so
   // filtering on them silently matched nothing. Re-add once /products/public
   // includes fabricDetails/occasion, or filter server-side.
+  {
+    id: 'sizes',
+    label: 'Size',
+    options: ['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((s) => ({ label: s, value: s })),
+  },
+  {
+    id: 'colors',
+    label: 'Color',
+    options: [
+      { label: 'Black', value: 'black' },
+      { label: 'White', value: 'white' },
+      { label: 'Red', value: 'red' },
+      { label: 'Blue', value: 'blue' },
+      { label: 'Green', value: 'green' },
+      { label: 'Gold', value: 'gold' },
+      { label: 'Pink', value: 'pink' },
+      { label: 'Maroon', value: 'maroon' },
+    ],
+  },
 ];
 
 const PRICE_MIN = 0;
@@ -51,9 +73,12 @@ const DEFAULT_FILTERS: FilterState = {
   designers: [],
   fabrics: [],
   occasions: [],
+  sizes: [],
+  colors: [],
   ratings: [],
   priceMin: PRICE_MIN,
   priceMax: PRICE_MAX,
+  inStockOnly: false,
 };
 
 export default function FilterSidebar({ onFiltersChange, totalResults, initialCategory }: FilterSidebarProps) {
@@ -119,8 +144,10 @@ export default function FilterSidebar({ onFiltersChange, totalResults, initialCa
   };
 
   const totalActive = filters.categories.length + filters.designers.length +
-    filters.fabrics.length + filters.occasions.length + filters.ratings.length +
-    (filters.priceMin > PRICE_MIN || filters.priceMax < PRICE_MAX ? 1 : 0);
+    filters.fabrics.length + filters.occasions.length + filters.sizes.length +
+    filters.colors.length + filters.ratings.length +
+    (filters.priceMin > PRICE_MIN || filters.priceMax < PRICE_MAX ? 1 : 0) +
+    (filters.inStockOnly ? 1 : 0);
 
   const pricePercent = ((filters.priceMax - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
 
@@ -162,6 +189,8 @@ export default function FilterSidebar({ onFiltersChange, totalResults, initialCa
             designers: filters.designers,
             fabrics: filters.fabrics,
             occasions: filters.occasions,
+            sizes: filters.sizes,
+            colors: filters.colors,
           }) as [keyof FilterState, string[]][]).flatMap(([key, vals]) =>
             vals.map((v) => (
               <button
@@ -385,6 +414,29 @@ export default function FilterSidebar({ onFiltersChange, totalResults, initialCa
               </div>
             )}
           </AnimatePresence>
+        </div>
+
+        {/* Availability */}
+        <div className="px-5 py-4">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={filters.inStockOnly}
+              onChange={() => setFilters((prev) => ({ ...prev, inStockOnly: !prev.inStockOnly }))}
+              className="sr-only"
+            />
+            <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0 ${filters.inStockOnly
+                ? 'bg-accent border-accent'
+                : 'border-border group-hover:border-accent'
+              }`}>
+              {filters.inStockOnly && (
+                <svg viewBox="0 0 12 10" fill="none" className="w-3 h-3">
+                  <path d="M1 5l3 3 7-7" stroke="#0F0F0F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </span>
+            <span className="font-semibold text-sm">In Stock Only</span>
+          </label>
         </div>
 
         {/* Dynamic sections */}

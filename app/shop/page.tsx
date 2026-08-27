@@ -28,9 +28,12 @@ function ShopPageInner() {
     designers: [],
     fabrics: [],
     occasions: [],
+    sizes: [],
+    colors: [],
     ratings: [],
     priceMin: 0,
     priceMax: 150000,
+    inStockOnly: false,
   });
 
   const [reloadKey, setReloadKey] = useState(0);
@@ -263,7 +266,7 @@ function ShopPageInner() {
                 <h3 className="font-playfair text-xl font-semibold mb-2">No products found</h3>
                 <p className="text-muted-foreground text-sm mb-6">Try adjusting your filters or search query</p>
                 <button
-                  onClick={() => { setFilters({ categories: [], designers: [], fabrics: [], occasions: [], ratings: [], priceMin: 0, priceMax: 150000 }); setSearchQuery(''); }}
+                  onClick={() => { setFilters({ categories: [], designers: [], fabrics: [], occasions: [], sizes: [], colors: [], ratings: [], priceMin: 0, priceMax: 150000, inStockOnly: false }); setSearchQuery(''); }}
                   className="px-8 py-3 bg-luxury-black text-luxury-ivory rounded-xl font-semibold hover:bg-accent hover:text-luxury-black transition-all"
                 >
                   Clear All Filters

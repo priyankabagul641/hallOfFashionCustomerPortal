@@ -14,6 +14,26 @@ import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/use-notifications';
 import { safeImageSrc } from '@/lib/utils';
 import { getPublicCollections, CollectionSection, PublicCollection } from '@/lib/api/collections';
+import { getSearchSuggestions, getPopularSearches, SearchSuggestion } from '@/lib/api/search';
+import { useRouter } from 'next/navigation';
+
+const RECENT_SEARCHES_KEY = 'hof_recent_searches';
+
+function getRecentSearches(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentSearch(query: string) {
+  const trimmed = query.trim();
+  if (!trimmed) return;
+  const existing = getRecentSearches().filter((q) => q.toLowerCase() !== trimmed.toLowerCase());
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify([trimmed, ...existing].slice(0, 5)));
+}
 
 // ─── Menu data ────────────────────────────────────────────────────────────────
 
@@ -192,11 +212,7 @@ export default function Navbar() {
 
           {/* ── Right Icons ── */}
           <div className="flex items-center gap-0.5">
-            <Link href="/search">
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="p-2.5 hover:text-accent rounded-lg hover:bg-accent/8 transition-colors">
-                <Search size={19} />
-              </motion.button>
-            </Link>
+            <SearchBox />
 
             <Link href="/notifications">
               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="relative p-2.5 hover:text-accent rounded-lg hover:bg-accent/8 transition-colors">
@@ -377,6 +393,152 @@ export default function Navbar() {
         </AnimatePresence>
       </div>
     </motion.nav>
+  );
+}
+
+function SearchBox() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [recent, setRecent] = useState<string[]>([]);
+  const [popular, setPopular] = useState<string[] | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    // Clear stale results from the previous query immediately so the dropdown
+    // never shows a prior query's matches while the new debounced fetch is
+    // still in flight — legitimate effect use (syncing UI to a changing input
+    // value ahead of an async result), not derivable from render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSuggestions([]);
+    const timer = setTimeout(() => {
+      getSearchSuggestions(trimmed)
+        .then((res) => setSuggestions(res.data.suggestions))
+        .catch(() => setSuggestions([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    if (!open) return;
+    inputRef.current?.focus();
+
+    const onOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [open]);
+
+  const submitSearch = (q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+    saveRecentSearch(trimmed);
+    setOpen(false);
+    setQuery('');
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+  };
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => {
+          setRecent(getRecentSearches());
+          if (popular === null) {
+            getPopularSearches()
+              .then((res) => setPopular(res.data.queries))
+              .catch(() => setPopular([]));
+          }
+          setOpen((o) => !o);
+        }}
+        className="p-2.5 hover:text-accent rounded-lg hover:bg-accent/8 transition-colors"
+      >
+        <Search size={19} />
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 mt-2 w-96 bg-card rounded-2xl shadow-premium-lg border border-border overflow-hidden"
+          >
+            <div className="p-3 border-b border-border">
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submitSearch(query)}
+                placeholder="Search products, designers..."
+                className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-accent text-sm"
+              />
+            </div>
+
+            <div className="max-h-96 overflow-y-auto">
+              {!query.trim() && recent.length > 0 && (
+                <div className="p-3 border-b border-border">
+                  <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-2">Recent Searches</p>
+                  {recent.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => submitSearch(q)}
+                      className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-accent/8 text-sm transition-colors"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {!query.trim() && popular && popular.length > 0 && (
+                <div className="p-3 border-b border-border">
+                  <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase mb-2">Popular Searches</p>
+                  {popular.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => submitSearch(q)}
+                      className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-accent/8 text-sm transition-colors"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {query.trim() && (
+                suggestions.length > 0 ? (
+                  <div className="p-3">
+                    {suggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => submitSearch(s.name)}
+                        className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-accent/8 transition-colors text-left"
+                      >
+                        <Image src={safeImageSrc(s.image)} alt={s.name} width={36} height={36} className="rounded-lg object-cover shrink-0" />
+                        <span className="text-sm">{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="p-4 text-sm text-muted-foreground">No suggestions found</p>
+                )
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 

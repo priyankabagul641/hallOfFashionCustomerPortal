@@ -1,222 +1,187 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
-import { Search, Clock, TrendingUp, X } from 'lucide-react';
+import ProductCard from '@/components/products/ProductCard';
+import FilterSidebar, { FilterState } from '@/components/products/FilterSidebar';
+import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
+import ProductLoadError from '@/components/products/ProductLoadError';
+import { searchProducts, recordSearchEvent } from '@/lib/api/search';
+import { Product } from '@/lib/api/products';
+import { Search as SearchIcon } from 'lucide-react';
 
-const trendingSearches = [
-  'Sherwani',
-  'Kurta Pajama',
-  'Bandhgala',
-  'Indo Western',
-  'Wedding Collection',
-];
+const PAGE_SIZE = 24;
 
-const recentSearches = [
-  'Black Sherwani',
-  'Ivory Kurta',
-  'Nehru Jacket',
-];
+function SearchPageInner() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get('q') ?? '';
 
-export default function SearchPage() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'relevance' | 'newest' | 'popularity' | 'rating' | 'price_asc' | 'price_desc'>('relevance');
+  const [filters, setFilters] = useState<FilterState>({
+    categories: [], designers: [], fabrics: [], occasions: [], sizes: [], colors: [],
+    ratings: [], priceMin: 0, priceMax: 150000, inStockOnly: false,
+  });
+  const [reloadKey, setReloadKey] = useState(0);
+  const eventLoggedRef = useRef<string | null>(null);
 
-  const mockProducts = [
-    {
-      id: '1',
-      name: 'Royal Embroidered Sherwani',
-      price: '₹24,999',
-      image:
-        'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=300&q=80',
-      designer: 'Deepak Chhabra',
-    },
-    {
-      id: '2',
-      name: 'Classic Ivory Kurta Pajama',
-      price: '₹8,999',
-      image:
-        'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?w=300&q=80',
-      designer: 'House of Ethnics',
-    },
-    {
-      id: '3',
-      name: 'Premium Bandhgala Suit',
-      price: '₹18,999',
-      image:
-        'https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=300&q=80',
-      designer: 'Diwan Saheb',
-    },
-  ];
+  const fetchPage = useCallback((pageNum: number, append: boolean) => {
+    if (!query.trim()) { setProducts([]); setTotal(0); setLoading(false); return; }
+    (append ? setLoadingMore : setLoading)(true);
+    searchProducts({
+      search: query,
+      category: filters.categories[0],
+      brand: filters.designers[0],
+      minPrice: filters.priceMin > 0 ? filters.priceMin : undefined,
+      maxPrice: filters.priceMax < 150000 ? filters.priceMax : undefined,
+      rating: filters.ratings.length > 0 ? Math.min(...filters.ratings) : undefined,
+      size: filters.sizes[0],
+      color: filters.colors[0],
+      availability: filters.inStockOnly ? 'in_stock' : undefined,
+      sortBy,
+      page: pageNum,
+      pageSize: PAGE_SIZE,
+    })
+      .then((res) => {
+        setProducts((prev) => (append ? [...prev, ...res.data.products] : res.data.products));
+        setTotal(res.data.total);
+        setTotalPages(res.data.totalPages);
+        setPage(res.data.page);
+        setError(null);
 
-  const handleSearch = (searchQuery: string) => {
-    setQuery(searchQuery);
-    setIsSearching(true);
+        // Only log once per query load (not on filter/sort tweaks or load-more).
+        if (!append && eventLoggedRef.current !== query) {
+          eventLoggedRef.current = query;
+          recordSearchEvent({ query, resultsCount: res.data.total });
+        }
+      })
+      .catch(() => setError('Failed to load search results. Please try again.'))
+      .finally(() => { setLoading(false); setLoadingMore(false); });
+  }, [query, filters, sortBy]);
 
-    // Simulate API call
-    setTimeout(() => {
-      const filtered = mockProducts.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.designer.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setResults(filtered);
-      setIsSearching(false);
-    }, 500);
+  useEffect(() => {
+    fetchPage(1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, filters, sortBy, reloadKey]);
+
+  const handleRetry = () => setReloadKey((k) => k + 1);
+  const handleLoadMore = () => fetchPage(page + 1, true);
+
+  const handleProductClick = (productId: string) => {
+    if (query.trim()) recordSearchEvent({ query, clickedProductId: productId });
   };
 
   return (
-    <main className="bg-background text-foreground">
-      <div className="pt-28 pb-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Search Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
-          >
-            <h1 className="text-display font-playfair mb-8">Find Your Style</h1>
-
-            {/* Search Bar */}
-            <div className="relative mb-8">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={24} />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Search for sherwani, kurta, bandhgala, designer..."
-                className="w-full pl-12 pr-4 py-4 text-lg rounded-xl bg-card border-2 border-border focus:outline-none focus:border-accent transition-all"
-              />
-            </div>
-
-            {/* Trending Searches */}
-            {!query && (
-              <div className="mb-8">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-4 flex items-center gap-2">
-                  <TrendingUp size={16} />
-                  Trending Now
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {trendingSearches.map((search) => (
-                    <motion.button
-                      key={search}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleSearch(search)}
-                      className="px-4 py-2 rounded-full bg-card border border-border hover:border-accent hover:text-accent transition-all"
-                    >
-                      {search}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Recent Searches */}
-            {!query && recentSearches.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-4 flex items-center gap-2">
-                  <Clock size={16} />
-                  Recent Searches
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {recentSearches.map((search) => (
-                    <motion.button
-                      key={search}
-                      whileHover={{ scale: 1.05 }}
-                      onClick={() => handleSearch(search)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-background border border-border hover:border-accent transition-all group"
-                    >
-                      <Clock size={14} className="text-muted-foreground group-hover:text-accent" />
-                      {search}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
+    <main className="bg-background text-foreground pt-28 md:pt-20">
+      <div className="pt-28 pb-0 border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <p className="text-accent font-cormorant text-base tracking-widest uppercase mb-1">Search</p>
+            <h1 className="font-playfair text-4xl md:text-5xl font-bold mb-2">
+              {query ? `Results for "${query}"` : 'Search'}
+            </h1>
+            {!loading && query && (
+              <p className="text-muted-foreground">{total} products found</p>
             )}
           </motion.div>
-
-          {/* Search Results */}
-          {query && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mb-12"
-            >
-              <h2 className="text-2xl font-playfair font-semibold mb-6">
-                Results for &quot;{query}&quot;
-              </h2>
-
-              {isSearching ? (
-                <div className="text-center py-12">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                    className="w-12 h-12 border-2 border-accent border-t-transparent rounded-full mx-auto"
-                  />
-                </div>
-              ) : results.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {results.map((product) => (
-                    <Link key={product.id} href={`/product/${product.id}`}>
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        whileHover={{ y: -4 }}
-                        className="glass rounded-2xl overflow-hidden hover:shadow-premium-lg transition-all cursor-pointer"
-                      >
-                        <div className="relative h-64 overflow-hidden">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                          />
-                        </div>
-                        <div className="p-6">
-                          <p className="text-sm text-muted-foreground mb-2">{product.designer}</p>
-                          <h3 className="font-playfair font-semibold mb-2">{product.name}</h3>
-                          <p className="text-lg text-accent font-semibold">{product.price}</p>
-                        </div>
-                      </motion.div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-12"
-                >
-                  <p className="text-muted-foreground mb-4">No results found for &quot;{query}&quot;</p>
-                  <p className="text-sm text-muted-foreground">
-                    Try searching for a different outfit, designer, or occasion.
-                  </p>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-
-          {/* Suggestions */}
-          {!query && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="glass rounded-2xl p-8"
-            >
-              <h2 className="text-2xl font-playfair font-semibold mb-6">Search Tips</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                <p>Search by designer name: "Deepak Chhabra"</p>
-                <p>Search by occasion: "Wedding" or "Reception"</p>
-                <p>Search by outfit: "Sherwani" or "Kurta Pajama"</p>
-                <p>Search by style: "Bandhgala" or "Indo Western"</p>
-              </div>
-            </motion.div>
-          )}
         </div>
       </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!query.trim() ? (
+          <div className="text-center py-24">
+            <SearchIcon className="mx-auto mb-4 text-muted-foreground" size={48} />
+            <p className="text-muted-foreground">Type a search query to find products.</p>
+          </div>
+        ) : (
+          <div className="flex gap-8">
+            <aside className="hidden lg:block w-72 shrink-0 self-start">
+              <div className="lg:sticky lg:top-24">
+                <FilterSidebar onFiltersChange={setFilters} totalResults={total} />
+              </div>
+            </aside>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-5 border-b border-border">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-bold text-foreground">{total}</span> products
+                </p>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="px-4 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
+                >
+                  <option value="relevance">Most Relevant</option>
+                  <option value="newest">Newest First</option>
+                  <option value="popularity">Most Popular</option>
+                  <option value="rating">Highest Rated</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                </select>
+              </div>
+
+              {loading && products.length === 0 ? (
+                <ProductGridSkeleton />
+              ) : error && products.length === 0 ? (
+                <ProductLoadError message={error} onRetry={handleRetry} />
+              ) : products.length === 0 ? (
+                <div className="text-center py-24">
+                  <SearchIcon className="mx-auto mb-4 text-muted-foreground" size={48} />
+                  <h3 className="font-playfair text-xl font-semibold mb-2">No results for &quot;{query}&quot;</h3>
+                  <p className="text-muted-foreground text-sm">Try different keywords, or check for typos.</p>
+                </div>
+              ) : (
+                <>
+                  <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {products.map((product, idx) => (
+                      <motion.div
+                        key={product.id}
+                        layout
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(idx * 0.05, 0.5) }}
+                        onClickCapture={() => handleProductClick(product.id)}
+                      >
+                        <ProductCard product={product} />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+
+                  {page < totalPages && (
+                    <div className="text-center mt-14">
+                      <button
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                        className="px-10 py-4 border-2 border-luxury-black text-luxury-black font-semibold rounded-xl hover:bg-luxury-black hover:text-luxury-ivory transition-all disabled:opacity-50"
+                      >
+                        {loadingMore ? 'Loading...' : 'Load More Products'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       <Footer />
     </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<ProductGridSkeleton />}>
+      <SearchPageInner />
+    </Suspense>
   );
 }
