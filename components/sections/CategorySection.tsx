@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,25 +18,41 @@ interface Category {
 export default function CategorySection() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
-    const clipRef = useRef<HTMLDivElement>(null);
+    // Categories load async and the clip div doesn't exist until then (see
+    // `if (categories.length === 0) return null` below), so a plain useRef +
+    // effect-on-mount misses it — the div mounts on a later render, after the
+    // once-only effect already ran against a null ref. A callback ref re-fires
+    // whenever the node actually attaches, whenever that happens.
+    const [clipEl, setClipEl] = useState<HTMLDivElement | null>(null);
     const [clipWidth, setClipWidth] = useState(0);
+    // Lags one frame behind clipWidth on purpose: flips true only *after* the
+    // fallback→measured jump has already painted, so that jump renders with
+    // duration 0 (no pop-in fade) and only later changes (nav, resize) animate.
+    // Deferred via rAF (a callback, not the effect body) — satisfies
+    // react-hooks/set-state-in-effect and gives the needed one-tick lag for free.
+    const [hasMeasured, setHasMeasured] = useState(false);
+    useEffect(() => {
+        if (clipWidth === 0) return;
+        const id = requestAnimationFrame(() => setHasMeasured(true));
+        return () => cancelAnimationFrame(id);
+    }, [clipWidth]);
 
     // Card spacing is 220px, card is 180px wide (90px half-width). Only cards
     // whose full circle fits inside the measured clip container should render
     // visible — otherwise outer cards get clipped mid-circle (see CATEGORY-CAROUSEL-CLIP bug).
+    // Fallback is 0 (not a guess) so nothing can render clipped before the first measurement.
     const maxVisible = clipWidth
         ? Math.max(0, Math.floor((clipWidth / 2 - 90) / 220))
-        : 3;
+        : 0;
 
     useEffect(() => {
-        const el = clipRef.current;
-        if (!el) return;
+        if (!clipEl) return;
         const ro = new ResizeObserver(([entry]) => {
             setClipWidth(entry.contentRect.width);
         });
-        ro.observe(el);
+        ro.observe(clipEl);
         return () => ro.disconnect();
-    }, []);
+    }, [clipEl]);
 
     useEffect(() => {
         getCategories()
@@ -152,7 +168,7 @@ export default function CategorySection() {
                     </button>
 
                     {/* Categories */}
-                    <div ref={clipRef} className="relative h-[190px] overflow-hidden">
+                    <div ref={setClipEl} className="relative h-[190px] overflow-hidden">
 
                         {categories.map((category, index) => {
                             const offset =
@@ -174,7 +190,10 @@ export default function CategorySection() {
                                         scale: 1,
                                     }}
                                     transition={{
-                                        duration: 0.6,
+                                        // Skip the fade on the fallback→measured jump (0 duration)
+                                        // so first paint shows the correct card count instantly;
+                                        // real interactions (nav, resize) still animate normally.
+                                        duration: hasMeasured ? 0.6 : 0,
                                         ease: 'easeInOut',
                                     }}
                                     className="
