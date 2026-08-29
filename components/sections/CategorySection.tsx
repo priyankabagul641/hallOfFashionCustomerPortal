@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,6 +18,25 @@ interface Category {
 export default function CategorySection() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
+    const clipRef = useRef<HTMLDivElement>(null);
+    const [clipWidth, setClipWidth] = useState(0);
+
+    // Card spacing is 220px, card is 180px wide (90px half-width). Only cards
+    // whose full circle fits inside the measured clip container should render
+    // visible — otherwise outer cards get clipped mid-circle (see CATEGORY-CAROUSEL-CLIP bug).
+    const maxVisible = clipWidth
+        ? Math.max(0, Math.floor((clipWidth / 2 - 90) / 220))
+        : 3;
+
+    useEffect(() => {
+        const el = clipRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) => {
+            setClipWidth(entry.contentRect.width);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
     useEffect(() => {
         getCategories()
@@ -133,7 +152,7 @@ export default function CategorySection() {
                     </button>
 
                     {/* Categories */}
-                    <div className="relative h-[190px] overflow-hidden">
+                    <div ref={clipRef} className="relative h-[190px] overflow-hidden">
 
                         {categories.map((category, index) => {
                             const offset =
@@ -151,7 +170,7 @@ export default function CategorySection() {
                                     key={category.id}
                                     animate={{
                                         x: position * 220,
-                                        opacity: Math.abs(position) > 3 ? 0 : 1,
+                                        opacity: Math.abs(position) > maxVisible ? 0 : 1,
                                         scale: 1,
                                     }}
                                     transition={{
