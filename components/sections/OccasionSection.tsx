@@ -45,7 +45,7 @@ export default function OccasionSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
           {/* Large featured tile */}
-          <Link href={`/shop?occasion=${encodeURIComponent(featured.name)}`}>
+          <Link href={`/collection/${featured.id}`}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -75,7 +75,7 @@ export default function OccasionSection() {
           {/* Smaller tiles */}
           <div className="grid grid-cols-2 gap-6 lg:gap-8">
             {rest.map((occasion, index) => (
-              <Link key={occasion.id} href={`/shop?occasion=${encodeURIComponent(occasion.name)}`}>
+              <Link key={occasion.id} href={`/collection/${occasion.id}`}>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
