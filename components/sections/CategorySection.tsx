@@ -57,13 +57,17 @@ export default function CategorySection() {
     useEffect(() => {
         getCategories()
             .then((res) => {
-                const fetched = res.data.categories.map((c: PublicCategory) => ({
-                    id: c.id,
-                    name: c.name,
-                    slug: c.slug,
-                    image: c.imageUrl,
-                    count: c.productCount,
-                }));
+                // Homepage-only visibility toggle (admin-managed); missing/undefined
+                // treated as visible since the backend default is true.
+                const fetched = res.data.categories
+                    .filter((c: PublicCategory) => c.showOnHomepage !== false)
+                    .map((c: PublicCategory) => ({
+                        id: c.id,
+                        name: c.name,
+                        slug: c.slug,
+                        image: c.imageUrl,
+                        count: c.productCount,
+                    }));
                 setCategories(fetched);
             })
             .catch(() => setCategories([]));

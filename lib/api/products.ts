@@ -99,6 +99,7 @@ export interface PublicCategory {
   imageUrl: string | null;
   displayOrder: number;
   productCount: number;
+  showOnHomepage: boolean;
 }
 
 export function getCategories() {
