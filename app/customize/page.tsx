@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import {
@@ -577,8 +578,8 @@ function OptionCard({
       }`}
     >
       {image && (
-        <div className="h-36 overflow-hidden">
-          <img src={image} alt={label} className="w-full h-full object-cover" />
+        <div className="relative h-36 overflow-hidden">
+          <Image src={image} alt={label} fill className="object-cover" />
         </div>
       )}
       <div className="p-4">

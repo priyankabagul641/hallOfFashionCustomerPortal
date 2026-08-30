@@ -168,6 +168,9 @@ export default function OrdersPage() {
                       <div className="space-y-3">
                         {order.items.map((item) => (
                           <div key={item.id} className="flex items-center gap-4 bg-muted/20 rounded-xl p-3">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- historical
+                                order-item image snapshot, not guaranteed to be an S3/remotePattern
+                                host; onError swap to a local fallback needs a plain <img>. */}
                             <img
                               src={item.image || '/placeholder.jpg'}
                               alt={item.name}

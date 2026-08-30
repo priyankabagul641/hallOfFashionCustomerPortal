@@ -82,11 +82,14 @@ export function MeasurementProvider({ children }: { children: ReactNode }) {
   const [profiles, setProfiles] = useState<MeasurementProfile[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
+  // Hydrate from localStorage after mount to avoid SSR/client markup mismatch
+  // (same pattern as CartContext).
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const stored = parseStoredProfiles(localStorage.getItem(getStorageKey(currentUserId)));
     const nextProfiles = stored && stored.length > 0 ? normalizeProfiles(stored) : getSeedProfiles(currentUserId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProfiles(nextProfiles);
     setHydrated(true);
   }, [currentUserId]);

@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import DOMPurify from 'isomorphic-dompurify';
 import Footer from '@/components/layout/Footer';
 import { getPublicBlogBySlug, PublicBlogDetail } from '@/lib/api/blogs';
@@ -56,7 +57,7 @@ export default function BlogClient({ params }: { params: Promise<{ slug: string 
     <main className="min-h-screen bg-background">
       {/* Hero Banner */}
       <section className="relative h-72 md:h-96 overflow-hidden pt-20">
-        <img src={banner} alt={post.title} className="w-full h-full object-cover" />
+        <Image src={banner} alt={post.title} fill priority className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
         <div className="absolute inset-0 flex flex-col justify-end px-4 sm:px-8 pb-10 max-w-4xl mx-auto left-0 right-0">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>

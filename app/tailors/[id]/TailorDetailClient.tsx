@@ -3,6 +3,7 @@
 import { use, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import Footer from '@/components/layout/Footer';
 import { tailors } from '@/data/tailors';
@@ -52,7 +53,7 @@ export default function TailorDetailPage({ params }: { params: Promise<{ id: str
             <div className="lg:col-span-1">
               <div className="bg-card rounded-2xl overflow-hidden shadow-premium border border-border sticky top-28">
                 <div className="relative h-64">
-                  <img src={tailor.image} alt={tailor.name} className="w-full h-full object-cover" />
+                  <Image src={tailor.image} alt={tailor.name} fill priority className="object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                   <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold ${availabilityColor[tailor.availability]}`}>
                     {tailor.availability}
@@ -213,7 +214,9 @@ export default function TailorDetailPage({ params }: { params: Promise<{ id: str
                           transition={{ delay: i * 0.1 }}
                           className="relative rounded-xl overflow-hidden group cursor-pointer"
                         >
-                          <img src={item.image} alt={item.title} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <div className="relative h-48">
+                            <Image src={item.image} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                          </div>
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
                             <div>
                               <p className="text-white font-semibold text-sm">{item.title}</p>

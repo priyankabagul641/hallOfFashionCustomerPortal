@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, ShoppingBag, Menu, X, Search, ChevronDown, User,
-  Bell, Scissors, Ruler, Package, MessageCircle, LogOut, Settings,
+  Bell, Ruler, Package, MessageCircle, LogOut,
   Sparkles, Store, Eye, ArrowRight
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -256,7 +256,7 @@ export default function Navbar() {
                 className="flex items-center gap-2 p-2 hover:text-accent rounded-lg hover:bg-accent/8 transition-colors"
               >
                 {user?.avatar
-                  ? <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover border-2 border-accent/40" />
+                  ? <Image src={user.avatar} alt={user.name} width={28} height={28} className="w-7 h-7 rounded-full object-cover border-2 border-accent/40" />
                   : <User size={19} />
                 }
               </motion.button>
@@ -274,7 +274,7 @@ export default function Navbar() {
                     {user ? (
                       <>
                         <div className="px-5 py-4 bg-accent/10 border-b border-border flex items-center gap-3">
-                          {user.avatar && <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover" />}
+                          {user.avatar && <Image src={user.avatar} alt={user.name} width={36} height={36} className="w-9 h-9 rounded-full object-cover" />}
                           <div>
                             <p className="font-semibold text-sm">{user.name}</p>
                             <p className="text-xs text-muted-foreground">{user.email}</p>
@@ -342,7 +342,7 @@ export default function Navbar() {
               <div className="px-4 py-5 space-y-0.5">
                 {user && (
                   <div className="flex items-center gap-3 py-3 mb-3 border-b border-border">
-                    {user.avatar && <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />}
+                    {user.avatar && <Image src={user.avatar} alt={user.name} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />}
                     <div>
                       <p className="font-semibold text-sm">{user.name}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>

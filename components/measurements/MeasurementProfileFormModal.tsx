@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X } from 'lucide-react';
 import {
@@ -48,27 +48,33 @@ export default function MeasurementProfileFormModal({
   const [isDefault, setIsDefault] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
 
-  useEffect(() => {
-    if (!open) return;
+  // Reset form fields whenever the modal opens or the edit target switches,
+  // adjusted during render (not an effect) per React's reset-on-prop-change
+  // pattern.
+  const resetKey = open ? profile?.id ?? '__new__' : null;
+  const [trackedResetKey, setTrackedResetKey] = useState<string | null>(null);
+  if (resetKey !== trackedResetKey) {
+    setTrackedResetKey(resetKey);
+    if (resetKey !== null) {
+      const source = profile ?? null;
+      setName(source?.name ?? '');
+      setMeasurementType(source?.measurementType ?? initialType);
+      setUnit(source?.unit ?? 'in');
+      setNotes(source?.notes ?? '');
+      setIsDefault(source?.isDefault ?? profiles.length === 0);
 
-    const source = profile ?? null;
-    setName(source?.name ?? '');
-    setMeasurementType(source?.measurementType ?? initialType);
-    setUnit(source?.unit ?? 'in');
-    setNotes(source?.notes ?? '');
-    setIsDefault(source?.isDefault ?? profiles.length === 0);
-
-    const nextMeasurements: Partial<Record<MeasurementFieldKey, string>> = {};
-    if (source) {
-      Object.entries(source.measurements).forEach(([key, value]) => {
-        if (typeof value === 'number') {
-          nextMeasurements[key as MeasurementFieldKey] = value.toFixed(2).replace(/\.00$/, '');
-        }
-      });
+      const nextMeasurements: Partial<Record<MeasurementFieldKey, string>> = {};
+      if (source) {
+        Object.entries(source.measurements).forEach(([key, value]) => {
+          if (typeof value === 'number') {
+            nextMeasurements[key as MeasurementFieldKey] = value.toFixed(2).replace(/\.00$/, '');
+          }
+        });
+      }
+      setMeasurements(nextMeasurements);
+      setErrors({});
     }
-    setMeasurements(nextMeasurements);
-    setErrors({});
-  }, [open, profile, initialType, profiles.length]);
+  }
 
   const visibleFields = useMemo(() => getMeasurementFields(measurementType), [measurementType]);
 

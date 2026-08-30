@@ -149,8 +149,6 @@ export default function FilterSidebar({ onFiltersChange, totalResults, initialCa
     (filters.priceMin > PRICE_MIN || filters.priceMax < PRICE_MAX ? 1 : 0) +
     (filters.inStockOnly ? 1 : 0);
 
-  const pricePercent = ((filters.priceMax - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
-
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
       {/* Header */}

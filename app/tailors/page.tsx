@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import Footer from '@/components/layout/Footer';
 import { tailors } from '@/data/tailors';
-import { Star, MapPin, Clock, Award, ChevronRight, Search, Filter, Scissors } from 'lucide-react';
+import { Star, MapPin, ChevronRight, Search, Filter, Scissors } from 'lucide-react';
 
 const cities = ['All', 'Delhi', 'Hyderabad', 'Bengaluru', 'Jaipur', 'Mumbai', 'Lucknow'];
 const specializations = ['All', 'Sherwanis', 'Kurta Sets', 'Indo-Western', 'Chikankari', 'Bespoke Suits', 'Bandhgala'];
@@ -44,7 +45,7 @@ export default function TailorsPage() {
               Tailor <span className="text-accent">Marketplace</span>
             </h1>
             <p className="text-luxury-beige text-lg max-w-2xl mx-auto">
-              Connect with India's finest master tailors and artisans. Handpicked for their craftsmanship, heritage expertise, and excellence.
+              Connect with India&apos;s finest master tailors and artisans. Handpicked for their craftsmanship, heritage expertise, and excellence.
             </p>
           </motion.div>
 
@@ -136,10 +137,11 @@ export default function TailorsPage() {
                   <div className="bg-card rounded-2xl overflow-hidden shadow-premium hover:shadow-premium-lg transition-all group border border-border hover:border-accent/30">
                     {/* Image */}
                     <div className="relative h-56 overflow-hidden">
-                      <img
+                      <Image
                         src={tailor.image}
                         alt={tailor.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold ${availabilityColor[tailor.availability]}`}>
