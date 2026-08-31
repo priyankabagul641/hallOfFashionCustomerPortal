@@ -4,7 +4,6 @@ import HeroCarousel from '@/components/sections/HeroCarousel';
 import CollectionsGrid from '@/components/sections/CollectionsGrid';
 import FeaturedProducts from '@/components/sections/FeaturedProducts';
 import SectionCollections from '@/components/sections/SectionCollections';
-import DesignersShowcase from '@/components/sections/DesignersShowcase';
 import CinematicBanner from '@/components/sections/CinematicBanner';
 import TestimonialsSection from '@/components/sections/TestimonialsSection';
 import BlogSection from '@/components/sections/BlogSection';

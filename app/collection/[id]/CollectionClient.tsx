@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/products/ProductCard';
 import {
@@ -78,10 +79,12 @@ export default function CollectionPage({ params }: { params: Promise<{ id: strin
 
       {/* Hero Banner */}
       <section className="relative h-72 md:h-96 overflow-hidden pt-20">
-        <img
+        <Image
           src={banner}
           alt={title}
-          className="w-full h-full object-cover"
+          fill
+          priority
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
         <div className="absolute inset-0 flex flex-col justify-end px-4 sm:px-8 pb-10 max-w-7xl mx-auto left-0 right-0">

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import Footer from '@/components/layout/Footer';
 import { measurementGuide, MeasurementProfile } from '@/data/measurements';
 import { useMeasurements } from '@/context/MeasurementContext';
@@ -262,7 +263,7 @@ export default function MeasurementsPage() {
                     className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm group cursor-pointer"
                   >
                     <div className="relative h-44 overflow-hidden">
-                      <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <Image src={video.thumbnail} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                         <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center group-hover:bg-accent transition-colors">
                           <Video className="text-luxury-black ml-1" size={24} />

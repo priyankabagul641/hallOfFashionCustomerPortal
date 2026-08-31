@@ -133,6 +133,9 @@ export default function OrderDetailPage() {
             <div className="space-y-3">
               {order.items.map((item) => {
                 const thumbnail = (
+                  // Historical order-item image snapshot, not guaranteed to be an
+                  // S3/remotePattern host; onError swap to a local fallback needs a plain <img>.
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={item.image || '/placeholder.jpg'}
                     alt={item.name}
