@@ -129,6 +129,7 @@ export default function ProductDetailPage() {
         setSelectedSize(sizesForFirstColor[0] ?? '');
         setSelectedImage(0);
         setLoadedImages({});
+        setQuantity(Math.max(1, foundProduct.minOrderQuantity || 1));
         loadReviews(foundProduct.id, 1);
       })
       .catch((err: ApiError) => {
@@ -168,6 +169,12 @@ export default function ProductDetailPage() {
       ).map(([size, inStock]) => ({ size, inStock }))
     : [];
 
+  const selectedVariant = product?.variants?.find(
+    (v) => v.color === selectedColorOption?.name && v.size === selectedSize
+  );
+  const minQty = Math.max(1, product?.minOrderQuantity || 1);
+  const maxQty = selectedVariant?.stock ?? Infinity;
+
   const handleAddToCart = () => {
     if (!product) return;
     if (!selectedSize) {
@@ -185,14 +192,14 @@ export default function ProductDetailPage() {
       return;
     }
 
-    const matchedVariant = product.variants?.find(
-      (v) => v.color === selectedColorOption.name && v.size === selectedSize
-    );
-    const variantId = matchedVariant?.variantId;
+    if (selectedSize !== 'custom' && quantity > maxQty) {
+      toast.error(`Only ${maxQty} left in stock.`);
+      return;
+    }
 
     addToCart({
       productId: product.id,
-      variantId,
+      variantId: selectedVariant?.variantId,
       name: product.name,
       price: effectivePrice,
       mrp: mrp !== effectivePrice ? mrp : undefined,
@@ -204,6 +211,8 @@ export default function ProductDetailPage() {
       isCustomSize: selectedSize === 'custom',
       gstRate: product.gstRate,
       shippingCharge: product.shippingCharge,
+      stock: selectedVariant?.stock,
+      minOrderQuantity: product.minOrderQuantity,
       measurementProfileId: selectedMeasurementProfile?.id,
       measurementProfileName: selectedMeasurementProfile?.name,
       measurementType: selectedMeasurementProfile?.measurementType,
@@ -617,7 +626,7 @@ export default function ProductDetailPage() {
                 <div className="flex items-center gap-4 w-fit">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    onClick={() => setQuantity(Math.max(minQty, quantity - 1))}
                     className="px-4 py-2 border border-border rounded hover:bg-card transition-colors"
                   >
                     −
@@ -627,10 +636,7 @@ export default function ProductDetailPage() {
                   </span>
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    // ponytail: no stock count on public product endpoint yet, cap at 10
-                    // as a sane default; switch to Math.min(product.stock, quantity + 1)
-                    // once stock is exposed.
-                    onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                    onClick={() => setQuantity(Math.min(maxQty, quantity + 1))}
                     className="px-4 py-2 border border-border rounded hover:bg-card transition-colors"
                   >
                     +

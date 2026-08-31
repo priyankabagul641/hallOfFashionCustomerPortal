@@ -24,6 +24,7 @@ export interface Product {
   description: string;
   gstRate: number;
   shippingCharge: number;
+  minOrderQuantity: number;
 }
 
 // Best price to show for a product card/detail: sale price and marketing

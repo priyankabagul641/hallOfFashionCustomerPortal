@@ -1,14 +1,40 @@
 'use client';
 
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { useCart, cartItemKey } from '@/context/CartContext';
+import { getProduct } from '@/lib/api/products';
 import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, updateItemStock, markItemUnavailable, cartTotal, clearCart } = useCart();
+
+  // Cart persists in localStorage across sessions, so stock/minOrderQuantity
+  // captured at add-to-cart time can go stale — refresh from the product on
+  // mount. ponytail: sequential per-item fetches, add a batch endpoint if
+  // cart sizes ever justify it.
+  useEffect(() => {
+    let cancelled = false;
+    cartItems.forEach((item) => {
+      const key = cartItemKey(item);
+      const variantId = item.variantId;
+      getProduct(item.productId)
+        .then((res) => {
+          if (cancelled) return;
+          const variant = res.data.variants?.find((v) => v.variantId === variantId);
+          updateItemStock(key, variant?.stock, res.data.minOrderQuantity);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          markItemUnavailable(key);
+        });
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const tax = cartItems.reduce(
     (sum, item) => sum + (item.price * item.quantity * (item.gstRate ?? 0)) / 100,
@@ -19,6 +45,21 @@ export default function CartPage() {
     0
   );
   const finalTotal = cartTotal + tax + shipping;
+
+  const getRowError = (item: (typeof cartItems)[number]) => {
+    if (item.unavailable) {
+      return 'This product is no longer available.';
+    }
+    if (item.minOrderQuantity && item.quantity < item.minOrderQuantity) {
+      return `Minimum order quantity is ${item.minOrderQuantity}.`;
+    }
+    if (item.stock !== undefined && item.quantity > item.stock) {
+      return `Only ${item.stock} left in stock.`;
+    }
+    return null;
+  };
+
+  const hasCartErrors = cartItems.some((item) => getRowError(item) !== null);
 
   if (cartItems.length === 0) {
     return (
@@ -159,6 +200,11 @@ export default function CartPage() {
                           <Plus size={16} />
                         </motion.button>
                       </div>
+                      {getRowError(item) && (
+                        <p className="text-xs text-red-500 font-semibold text-right">
+                          {getRowError(item)}
+                        </p>
+                      )}
 
                       <p className="font-bold">
                         ₹{(item.price * item.quantity).toLocaleString()}
@@ -208,15 +254,24 @@ export default function CartPage() {
                     Final tax and total are calculated at checkout.
                   </p>
 
-                  <Link href="/checkout">
+                  {hasCartErrors ? (
                     <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:shadow-premium transition-all"
+                      disabled
+                      className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-lg opacity-50 cursor-not-allowed"
                     >
                       Proceed to Checkout
                     </motion.button>
-                  </Link>
+                  ) : (
+                    <Link href="/checkout">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:shadow-premium transition-all"
+                      >
+                        Proceed to Checkout
+                      </motion.button>
+                    </Link>
+                  )}
                 </div>
 
                 <motion.button

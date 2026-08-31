@@ -26,6 +26,7 @@ interface ProductCardProps {
     sizes?: string[];
     gstRate?: number;
     shippingCharge?: number;
+    minOrderQuantity?: number;
   };
 }
 
@@ -76,13 +77,14 @@ export default function ProductCard({ product }: ProductCardProps) {
       name: product.name,
       price: effectivePrice,
       mrp: mrp !== effectivePrice ? mrp : undefined,
-      quantity: 1,
+      quantity: Math.max(1, product.minOrderQuantity || 1),
       image: product.images[0],
       size: defaultSize,
       color: defaultColor,
       designer: product.designer,
       gstRate: product.gstRate,
       shippingCharge: product.shippingCharge,
+      minOrderQuantity: product.minOrderQuantity,
     });
 
     toast.success(`${product.name} added to cart!`, {
