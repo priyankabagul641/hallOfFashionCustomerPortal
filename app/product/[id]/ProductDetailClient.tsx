@@ -642,6 +642,19 @@ export default function ProductDetailPage() {
                     +
                   </motion.button>
                 </div>
+                {selectedVariant?.stock === 0 && (
+                  <p className="text-sm text-red-500">Out of stock</p>
+                )}
+                {selectedVariant && selectedVariant.stock > 0 && quantity >= maxQty && (
+                  <p className="text-sm text-red-500">
+                    Only {maxQty} available
+                  </p>
+                )}
+                {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 10 && (
+                  <p className="text-sm font-semibold text-amber-600">
+                    Hurry, only {selectedVariant.stock} left!
+                  </p>
+                )}
               </div>
 
               {/* Action Buttons */}

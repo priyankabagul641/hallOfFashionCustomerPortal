@@ -200,10 +200,16 @@ export default function CartPage() {
                           <Plus size={16} />
                         </motion.button>
                       </div>
-                      {getRowError(item) && (
+                      {getRowError(item) ? (
                         <p className="text-xs text-red-500 font-semibold text-right">
                           {getRowError(item)}
                         </p>
+                      ) : (
+                        item.stock !== undefined && item.stock > 0 && item.stock < 10 && (
+                          <p className="text-xs text-amber-600 font-semibold text-right">
+                            Hurry, only {item.stock} left!
+                          </p>
+                        )
                       )}
 
                       <p className="font-bold">
