@@ -30,6 +30,7 @@ function ResultCard({ match, onSelectProduct }: { match: ImageSearchMatch; onSel
         <p className="text-sm font-semibold truncate">{product.name}</p>
         <p className="text-xs text-muted-foreground truncate">{product.designer}</p>
         <p className="text-sm font-semibold text-accent mt-1">₹{effectivePrice.toLocaleString()}</p>
+        <p className="text-[11px] text-muted-foreground">{Math.round(match.similarity * 100)}% match</p>
       </div>
       <div className="flex items-center gap-2">
         <Link

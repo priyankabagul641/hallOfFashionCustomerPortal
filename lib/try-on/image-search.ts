@@ -17,16 +17,21 @@ export { preloadImageSearchModels } from './overlay';
 const CATALOGUE_CAP = 200;
 const RESULT_LIMIT = 8;
 
-// Tuned by hand against real photos (see task report): a same-product photo
-// (identical garment, different crop/lighting) scored ~0.90–0.97; visually
-// different garments scored well under 0.80. 0.86 sits in the gap, closer to
-// the "different garment" side, so a genuine catalogue match clears it
-// comfortably while near-miss designs fall through to "similar designs"
-// instead of being mislabeled exact.
+// ponytail: hand-picked heuristics, tune against real catalogue photos (the
+// result cards show each score). Exact = clearly high score, or a decent
+// score that clearly beats the runner-up — customer photos are often framed
+// differently from the product shot, which drags the absolute score down.
 export const MATCH_THRESHOLD = 0.86;
+const CLEAR_WINNER_FLOOR = 0.72;
+const CLEAR_WINNER_MARGIN = 0.04;
+// Bumped when the embedding recipe changes so stale cached vectors are ignored.
+const CACHE_VERSION = 'v2';
+// Share of the clothes crop kept for the upper-body comparison.
+const UPPER_FRACTION = 0.5;
 
 interface CachedEntry {
   embedding: Embedding;
+  upper: Embedding;
   color: RGB;
 }
 
@@ -111,13 +116,25 @@ function colorDistance(a: RGB, b: RGB): number {
   return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
 }
 
+function topPart(source: HTMLCanvasElement | HTMLImageElement): HTMLCanvasElement {
+  const w = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+  const h = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, w);
+  canvas.height = Math.max(1, Math.round(h * UPPER_FRACTION));
+  canvas.getContext('2d')?.drawImage(source, 0, 0, w, canvas.height, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+// Full garment + its upper half: a waist-up customer photo still matches a
+// full-length product shot (and vice versa) through the upper-half pair.
 async function embedImageElement(img: HTMLImageElement): Promise<CachedEntry> {
   const embedder = await getImageEmbedder();
   const region = await extractClothesRegion(img);
   const source = region?.canvas ?? img;
-  const result = embedder.embed(source);
   return {
-    embedding: result.embeddings[0],
+    embedding: embedder.embed(source).embeddings[0],
+    upper: embedder.embed(topPart(source)).embeddings[0],
     color: region?.color ?? averageColorOfImage(img),
   };
 }
@@ -125,12 +142,13 @@ async function embedImageElement(img: HTMLImageElement): Promise<CachedEntry> {
 async function embedProduct(product: Product, db: IDBDatabase | null): Promise<CachedEntry | null> {
   const url = product.images[0];
   if (!url) return null;
-  const cached = await getCached(db, url);
+  const key = `${CACHE_VERSION}:${url}`;
+  const cached = await getCached(db, key);
   if (cached) return cached;
   try {
     const img = await loadImage(proxiedProductImageUrl(url));
     const entry = await embedImageElement(img);
-    putCached(db, url, entry);
+    putCached(db, key, entry);
     return entry;
   } catch {
     return null;
@@ -155,12 +173,24 @@ export async function searchByImage(
     done++;
     onProgress?.(done, catalogue.length);
     if (!entry) continue;
-    const similarity = await cosineSimilarity(query.embedding, entry.embedding);
+    const similarity = Math.max(
+      await cosineSimilarity(query.embedding, entry.embedding),
+      await cosineSimilarity(query.upper, entry.upper)
+    );
     matches.push({ product, similarity, colorDistance: colorDistance(query.color, entry.color) });
   }
 
   const bySimilarity = [...matches].sort((a, b) => b.similarity - a.similarity);
-  const exactMatches = bySimilarity.filter((m) => m.similarity >= MATCH_THRESHOLD);
+  let exactMatches = bySimilarity.filter((m) => m.similarity >= MATCH_THRESHOLD);
+  const [best, runnerUp] = bySimilarity;
+  if (
+    !exactMatches.length &&
+    best &&
+    best.similarity >= CLEAR_WINNER_FLOOR &&
+    best.similarity - (runnerUp?.similarity ?? 0) >= CLEAR_WINNER_MARGIN
+  ) {
+    exactMatches = [best];
+  }
   const byColor = [...matches].sort((a, b) => a.colorDistance - b.colorDistance);
 
   return {
