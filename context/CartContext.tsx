@@ -27,6 +27,9 @@ export interface CartItem {
   measurementType?: MeasurementType;
   measurementUnit?: MeasurementUnit;
   measurementSnapshot?: Partial<Record<MeasurementFieldKey, number>>;
+  stock?: number;
+  minOrderQuantity?: number;
+  unavailable?: boolean;
 }
 
 export interface WishlistItem {
@@ -53,6 +56,8 @@ interface CartContextType {
   addToCart: (item: CartItem) => void;
   removeFromCart: (key: string) => void;
   updateQuantity: (key: string, quantity: number) => void;
+  updateItemStock: (key: string, stock: number | undefined, minOrderQuantity: number | undefined) => void;
+  markItemUnavailable: (key: string) => void;
   addToWishlist: (item: WishlistItem) => void;
   removeFromWishlist: (id: string) => void;
   isInWishlist: (id: string) => boolean;
@@ -114,6 +119,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  // Refreshes a cart item's stock/minOrderQuantity from a re-fetched product
+  // (localStorage-persisted cart data can go stale between sessions).
+  const updateItemStock = (key: string, stock: number | undefined, minOrderQuantity: number | undefined) => {
+    setCartItems((prev) =>
+      prev.map((item) => (cartItemKey(item) === key ? { ...item, stock, minOrderQuantity } : item))
+    );
+  };
+
+  // Marks a cart item whose product fetch failed (deleted/unreachable) so the
+  // UI can surface it and block checkout instead of silently using stale data.
+  const markItemUnavailable = (key: string) => {
+    setCartItems((prev) =>
+      prev.map((item) => (cartItemKey(item) === key ? { ...item, unavailable: true } : item))
+    );
+  };
+
   const addToWishlist = (item: WishlistItem) => {
     setWishlistItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
@@ -152,6 +173,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateItemStock,
+        markItemUnavailable,
         addToWishlist,
         removeFromWishlist,
         isInWishlist,
