@@ -24,6 +24,11 @@ const RESULT_LIMIT = 8;
 export const MATCH_THRESHOLD = 0.86;
 const CLEAR_WINNER_FLOOR = 0.72;
 const CLEAR_WINNER_MARGIN = 0.04;
+// "Similar designs" must score at least this, and within this much of the best.
+const SIMILAR_FLOOR = 0.5;
+const SIMILAR_WINDOW = 0.12;
+// RGB distance (0–441); beyond this a colour isn't "in this colour" any more.
+const MAX_COLOR_DISTANCE = 80;
 // Bumped when the embedding recipe changes so stale cached vectors are ignored.
 const CACHE_VERSION = 'v2';
 // Share of the clothes crop kept for the upper-body comparison.
@@ -191,11 +196,18 @@ export async function searchByImage(
   ) {
     exactMatches = [best];
   }
+  // Keep suggestions to the same kind of garment as the best match, and only
+  // ones scoring close to it — otherwise the list always pads out to
+  // RESULT_LIMIT with unrelated categories.
+  const bestCategory = best?.product.category?.trim().toLowerCase();
+  const sameKind = (m: ImageSearchMatch) => !bestCategory || m.product.category?.trim().toLowerCase() === bestCategory;
+  const closeToBest = (m: ImageSearchMatch) =>
+    !!best && m.similarity >= SIMILAR_FLOOR && best.similarity - m.similarity <= SIMILAR_WINDOW;
   const byColor = [...matches].sort((a, b) => a.colorDistance - b.colorDistance);
 
   return {
     exactMatches,
-    similarDesigns: exactMatches.length ? [] : bySimilarity.slice(0, RESULT_LIMIT),
-    similarColors: byColor.slice(0, RESULT_LIMIT),
+    similarDesigns: exactMatches.length ? [] : bySimilarity.filter((m) => sameKind(m) && closeToBest(m)).slice(0, RESULT_LIMIT),
+    similarColors: byColor.filter((m) => sameKind(m) && m.colorDistance <= MAX_COLOR_DISTANCE).slice(0, RESULT_LIMIT),
   };
 }
