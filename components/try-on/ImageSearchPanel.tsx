@@ -4,17 +4,12 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Search, ShoppingBag, Sparkles } from 'lucide-react';
-import { getDisplayPrice, getProducts, Product } from '@/lib/api/products';
+import { getAllProducts, getDisplayPrice, Product } from '@/lib/api/products';
 import { loadImage, resizeImageFile, TryOnError } from '@/lib/try-on/overlay';
 import { ImageSearchMatch, ImageSearchResult, preloadImageSearchModels, searchByImage } from '@/lib/try-on/image-search';
 import { safeImageSrc } from '@/lib/utils';
 import PhotoUpload from './PhotoUpload';
 
-// ponytail: single unpaginated fetch capped at the same 200-product ceiling
-// image-search.ts uses for embedding — see the CATALOGUE_CAP comment there
-// for the upgrade path (server-side embeddings) once the catalogue outgrows
-// a client-side scan.
-const CATALOGUE_FETCH_SIZE = 200;
 
 interface ImageSearchPanelProps {
   // When provided (embedded in the /try-on hub picker), selecting a result
@@ -75,9 +70,13 @@ export default function ImageSearchPanel({ onSelectProduct }: ImageSearchPanelPr
 
   useEffect(() => {
     preloadImageSearchModels();
-    getProducts({ pageSize: CATALOGUE_FETCH_SIZE })
-      .then((res) => setProducts(res.data.products))
-      .catch(() => setProducts([]));
+    // Backend caps pageSize at 100, so page through; searchByImage applies its own CATALOGUE_CAP.
+    getAllProducts()
+      .then(setProducts)
+      .catch(() => {
+        setProducts([]);
+        setSearchError('Could not load the catalogue. Please refresh and try again.');
+      });
   }, []);
 
   const handleFile = async (file: File | undefined) => {
