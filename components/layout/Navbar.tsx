@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, ShoppingBag, Menu, X, Search, ChevronDown, User,
   Bell, Ruler, Package, MessageCircle, LogOut,
-  Sparkles, Store, Eye, ArrowRight
+  Sparkles, Store, Eye, ArrowRight, Camera
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -79,7 +79,7 @@ const SERVICES_MENU = [
     icon: Eye,
     label: 'Virtual Try-On',
     desc: 'Preview how outfits look before you buy',
-    href: '/measurements',
+    href: '/try-on',
     accent: false,
   },
   {
@@ -213,6 +213,12 @@ export default function Navbar() {
           {/* ── Right Icons ── */}
           <div className="flex items-center gap-0.5">
             <SearchBox />
+
+            <Link href="/search/image" title="Search by image">
+              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="p-2.5 hover:text-accent rounded-lg hover:bg-accent/8 transition-colors">
+                <Camera size={19} />
+              </motion.button>
+            </Link>
 
             <Link href="/notifications">
               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="relative p-2.5 hover:text-accent rounded-lg hover:bg-accent/8 transition-colors">

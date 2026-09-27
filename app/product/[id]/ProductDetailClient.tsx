@@ -7,11 +7,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { getProduct, getDisplayPrice, ProductDetail } from '@/lib/api/products';
+import { getProduct, getDisplayPrice, isAccessoryProduct, ProductDetail } from '@/lib/api/products';
 import { getProductReviews, submitProductReview, Review } from '@/lib/api/reviews';
 import { ApiError } from '@/lib/api-client';
 import ProductLoadError from '@/components/products/ProductLoadError';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import TryOnPanel from '@/components/try-on/TryOnPanel';
 import { useAuth } from '@/context/AuthContext';
 
 import { MeasurementProfile, summarizeMeasurementProfile } from '@/data/measurements';
@@ -40,6 +42,7 @@ export default function ProductDetailPage() {
   const [showCustomSizePicker, setShowCustomSizePicker] = useState(false);
 
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [showTryOn, setShowTryOn] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Record<number, boolean>>({});
 
@@ -506,12 +509,23 @@ export default function ProductDetailPage() {
                       Select Size
                     </label>
 
-                    <button
-                      onClick={() => setShowSizeGuide(true)}
-                      className="text-accent text-sm font-semibold hover:underline"
-                    >
-                      Size Guide
-                    </button>
+                    <div className="flex items-center gap-4">
+                      {!isAccessoryProduct(product) && (
+                        <button
+                          type="button"
+                          onClick={() => setShowTryOn(true)}
+                          className="text-accent text-sm font-semibold hover:underline"
+                        >
+                          Try it on
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowSizeGuide(true)}
+                        className="text-accent text-sm font-semibold hover:underline"
+                      >
+                        Size Guide
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap gap-3">
@@ -1133,6 +1147,25 @@ export default function ProductDetailPage() {
           </>
         )}
       </AnimatePresence>
+
+      <Dialog open={showTryOn} onOpenChange={setShowTryOn}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Try it on
+              <span className="rounded-full bg-accent/20 border border-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent">
+                Beta
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <TryOnPanel
+            product={product}
+            productImageUrl={activeImages[0] || product.images[0]}
+            onClose={() => setShowTryOn(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </main>
   );

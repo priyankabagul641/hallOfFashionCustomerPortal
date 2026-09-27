@@ -63,6 +63,12 @@ export interface ProductDetail extends Product {
   variants?: ProductVariant[];
 }
 
+// Categories are free-text names managed in the admin portal, not a fixed
+// enum, so "is this an accessory" is a name match rather than an id check.
+export function isAccessoryProduct(product: Pick<Product, 'category' | 'subcategory'>): boolean {
+  return /accessor/i.test(product.category) || /accessor/i.test(product.subcategory);
+}
+
 export interface ProductFilters {
   search?: string;
   category?: string;
