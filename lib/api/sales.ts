@@ -20,6 +20,9 @@ export interface SaleProduct {
   discountedPrice?: number | null;
   salePrice?: number | null;
   saleDiscountPercent?: number | null;
+  saleVariantIds?: string[] | null;
+  scopedSaleDiscountPercent?: number | null;
+  scopedSalePrice?: number | null;
 }
 
 export interface SaleProductsFilters {

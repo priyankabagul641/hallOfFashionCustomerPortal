@@ -17,6 +17,9 @@ export interface Product {
   discountedPrice?: number | null;
   salePrice?: number | null;
   saleDiscountPercent?: number | null;
+  saleVariantIds?: string[] | null;
+  scopedSaleDiscountPercent?: number | null;
+  scopedSalePrice?: number | null;
   images: string[];
   rating: number;
   reviews: number;
@@ -32,15 +35,32 @@ export interface Product {
 // display purposes, show whichever is lower rather than stacking badges.
 // mrp/percentOff fall back to a plain price comparison — never recompute the
 // discounted/sale price itself, only the strike-through/badge derived from it.
+// When a sale is variant-scoped (saleVariantIds non-null), salePrice arrives
+// null from the backend — pass the id of the variant the shopper actually
+// has selected so we can use scopedSalePrice, the backend-computed final
+// price (already floored at cost price, which this portal never sees).
+// scopedSaleDiscountPercent is display-only (e.g. "X% off" label), never
+// used to compute price. Omit selectedVariantId (listing cards, quick-add)
+// and a scoped sale never shows a price — never guess which variant.
 export function getDisplayPrice(
-  product: Pick<Product, "price" | "mrp" | "discountedPrice" | "salePrice">
+  product: Pick<
+    Product,
+    "price" | "mrp" | "discountedPrice" | "salePrice" | "saleVariantIds" | "scopedSalePrice"
+  >,
+  selectedVariantId?: string | null
 ) {
   const mrp = product.mrp ?? product.price;
-  const { discountedPrice, salePrice } = product;
+  const { discountedPrice, salePrice, saleVariantIds, scopedSalePrice } = product;
+
+  let effectiveSalePrice = salePrice ?? null;
+  if (saleVariantIds != null) {
+    effectiveSalePrice =
+      selectedVariantId && saleVariantIds.includes(selectedVariantId) ? scopedSalePrice ?? null : null;
+  }
 
   const effectivePrice =
-    salePrice != null && (discountedPrice == null || salePrice <= discountedPrice)
-      ? salePrice
+    effectiveSalePrice != null && (discountedPrice == null || effectiveSalePrice <= discountedPrice)
+      ? effectiveSalePrice
       : discountedPrice ?? product.price;
 
   return {

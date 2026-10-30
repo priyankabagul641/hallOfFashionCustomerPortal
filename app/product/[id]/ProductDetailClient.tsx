@@ -146,10 +146,6 @@ export default function ProductDetailPage() {
     setReloadKey((k) => k + 1);
   };
 
-  const { effectivePrice, mrp, percentOff } = product
-    ? getDisplayPrice(product)
-    : { effectivePrice: 0, mrp: 0, percentOff: undefined };
-
   const isWishlisted = product ? isInWishlist(product.id) : false;
   const availableColors = product?.colorOptions?.length
     ? product.colorOptions.map((c) => ({ name: c.color, hex: c.colorCode || '#c8a56b', images: c.images }))
@@ -172,6 +168,13 @@ export default function ProductDetailPage() {
   const selectedVariant = product?.variants?.find(
     (v) => v.color === selectedColorOption?.name && v.size === selectedSize
   );
+
+  const { effectivePrice, mrp, percentOff } = product
+    ? getDisplayPrice(product, selectedVariant?.variantId)
+    : { effectivePrice: 0, mrp: 0, percentOff: undefined };
+
+  const hasScopedSale = !!(product?.saleVariantIds && product.scopedSaleDiscountPercent != null);
+  const scopedSaleActive = hasScopedSale && !!selectedVariant && product!.saleVariantIds!.includes(selectedVariant.variantId);
   const minQty = Math.max(1, product?.minOrderQuantity || 1);
   const maxQty = selectedVariant?.stock ?? Infinity;
 
@@ -473,6 +476,11 @@ export default function ProductDetailPage() {
                       {selectedColorOption?.name}
                     </span>
                   </div>
+                  {hasScopedSale && !scopedSaleActive && (
+                    <p className="text-xs text-accent font-medium mb-3">
+                      Sale on select colors/sizes
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-3">
                     {availableColors.map((color) => {
                       const isActive = selectedColorOption?.name === color.name;

@@ -23,6 +23,9 @@ export interface CollectionProduct {
   discountedPrice?: number | null;
   salePrice?: number | null;
   saleDiscountPercent?: number | null;
+  saleVariantIds?: string[] | null;
+  scopedSaleDiscountPercent?: number | null;
+  scopedSalePrice?: number | null;
   status: string;
   stock: number;
   lowStockThreshold: number;
