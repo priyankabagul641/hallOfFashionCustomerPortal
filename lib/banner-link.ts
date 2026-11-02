@@ -23,6 +23,8 @@ export async function resolveBannerHref(banner: BannerRow): Promise<string | nul
       const category = res.data.categories.find((c) => c.id === target);
       return category ? `/shop?category=${encodeURIComponent(category.name)}` : null;
     }
+    case "campaign":
+      return `/campaign/${target}`;
     default:
       return null;
   }

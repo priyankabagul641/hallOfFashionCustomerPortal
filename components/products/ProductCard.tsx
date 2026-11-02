@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Heart, ShoppingBag, Star } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
-import { getDisplayPrice } from '@/lib/api/products';
+import { getDisplayPrice, CampaignBadge } from '@/lib/api/products';
 
 interface ProductCardProps {
   product: {
@@ -18,6 +18,7 @@ interface ProductCardProps {
     discountedPrice?: number | null;
     salePrice?: number | null;
     saleDiscountPercent?: number | null;
+    campaignBadge?: CampaignBadge | null;
     images: string[];
     designer: string;
     rating: number;
@@ -35,6 +36,14 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
   const isWishlisted = isInWishlist(product.id);
   const { effectivePrice, mrp, percentOff } = getDisplayPrice(product);
+  const campaign = product.campaignBadge;
+  // Only trust campaign finalPrice when it applies to every variant — a
+  // variant-scoped discount can't be priced without knowing which variant
+  // the shopper picks, so fall back to the normal base/sale price.
+  const campaignPriceUsable = !!campaign && campaign.appliesToAllVariants && campaign.finalPrice != null;
+  const displayPrice = campaignPriceUsable ? campaign!.finalPrice! : effectivePrice;
+  const displayMrp = mrp;
+  const campaignEndsAt = campaign ? new Date(campaign.endsAt) : null;
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -47,8 +56,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       addToWishlist({
         id: product.id,
         name: product.name,
-        price: effectivePrice,
-        mrp: mrp !== effectivePrice ? mrp : undefined,
+        price: displayPrice,
+        mrp: displayMrp !== displayPrice ? displayMrp : undefined,
         image: product.images[0],
         designer: product.designer,
         gstRate: product.gstRate,
@@ -75,8 +84,8 @@ export default function ProductCard({ product }: ProductCardProps) {
     addToCart({
       productId: product.id,
       name: product.name,
-      price: effectivePrice,
-      mrp: mrp !== effectivePrice ? mrp : undefined,
+      price: displayPrice,
+      mrp: displayMrp !== displayPrice ? displayMrp : undefined,
       quantity: Math.max(1, product.minOrderQuantity || 1),
       image: product.images[0],
       size: defaultSize,
@@ -116,10 +125,18 @@ export default function ProductCard({ product }: ProductCardProps) {
             />
 
             {/* Discount Badge */}
-            {percentOff !== undefined && percentOff > 0 && (
-              <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                {percentOff}% OFF
+            {campaign ? (
+              <div className="absolute top-3 left-3 bg-accent text-luxury-black px-2 py-1 rounded-full text-xs font-semibold">
+                {campaign.appliesToAllVariants
+                  ? `${campaign.name} · ${campaign.discountPercent}% OFF`
+                  : `Up to ${campaign.discountPercent}% OFF`}
               </div>
+            ) : (
+              percentOff !== undefined && percentOff > 0 && (
+                <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                  {percentOff}% OFF
+                </div>
+              )
             )}
 
             {/* Overlay Actions */}
@@ -188,14 +205,19 @@ export default function ProductCard({ product }: ProductCardProps) {
 
             <div className="flex items-center gap-2">
               <p className="text-accent font-semibold text-lg">
-                ₹{effectivePrice.toLocaleString('en-IN')}
+                ₹{displayPrice.toLocaleString('en-IN')}
               </p>
-              {mrp > effectivePrice && (
+              {displayMrp > displayPrice && (
                 <p className="text-sm text-muted-foreground line-through">
-                  ₹{mrp.toLocaleString('en-IN')}
+                  ₹{displayMrp.toLocaleString('en-IN')}
                 </p>
               )}
             </div>
+            {campaignEndsAt && (
+              <p className="text-xs text-accent font-medium">
+                Campaign ends {campaignEndsAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              </p>
+            )}
             {product.stock !== undefined && product.stock < 5 && product.stock > 0 && (
               <p className="text-xs text-orange-600 font-semibold">
                 Only {product.stock} left in stock

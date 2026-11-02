@@ -1,16 +1,21 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import { useCart, cartItemKey } from '@/context/CartContext';
 import { getProduct } from '@/lib/api/products';
-import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
+import { quoteCheckout } from '@/lib/api/campaigns';
+import { useAuth } from '@/context/AuthContext';
+import { Trash2, Plus, Minus, ArrowLeft, AlertTriangle } from 'lucide-react';
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, updateQuantity, updateItemStock, markItemUnavailable, cartTotal, clearCart } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, updateItemStock, updateItemPrice, markItemUnavailable, cartTotal, clearCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  // key -> revalidated current price, when it differs from what cart has stored.
+  const [priceChanges, setPriceChanges] = useState<Record<string, number>>({});
 
   // Cart persists in localStorage across sessions, so stock/minOrderQuantity
   // captured at add-to-cart time can go stale — refresh from the product on
@@ -36,6 +41,45 @@ export default function CartPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Batch price revalidation against the real checkout pricing path (one
+  // request for every line instead of one per item). Checkout quote is
+  // customer-auth-only, so this just skips when logged out — checkout itself
+  // requires login regardless.
+  useEffect(() => {
+    if (!isAuthenticated || cartItems.length === 0) return;
+    let cancelled = false;
+    quoteCheckout(
+      cartItems.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        clientPrice: item.price,
+      }))
+    )
+      .then((res) => {
+        if (cancelled) return;
+        const changes: Record<string, number> = {};
+        res.data.items.forEach((line, idx) => {
+          if (line.changed) changes[cartItemKey(cartItems[idx])] = line.currentPrice;
+        });
+        setPriceChanges(changes);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
+  const acceptPriceChange = (key: string) => {
+    const newPrice = priceChanges[key];
+    if (newPrice == null) return;
+    updateItemPrice(key, newPrice);
+    setPriceChanges((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
   const tax = cartItems.reduce(
     (sum, item) => sum + (item.price * item.quantity * (item.gstRate ?? 0)) / 100,
     0
@@ -60,6 +104,7 @@ export default function CartPage() {
   };
 
   const hasCartErrors = cartItems.some((item) => getRowError(item) !== null);
+  const hasPriceChanges = cartItems.some((item) => priceChanges[cartItemKey(item)] != null);
 
   if (cartItems.length === 0) {
     return (
@@ -167,6 +212,21 @@ export default function CartPage() {
                             </>
                           )}
                         </div>
+                        {priceChanges[cartItemKey(item)] != null && (
+                          <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            <AlertTriangle size={14} className="flex-shrink-0" />
+                            <span className="flex-1">
+                              Price changed to ₹{priceChanges[cartItemKey(item)]!.toLocaleString()} since this was added.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => acceptPriceChange(cartItemKey(item))}
+                              className="font-semibold underline flex-shrink-0"
+                            >
+                              Update price
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -260,7 +320,7 @@ export default function CartPage() {
                     Final tax and total are calculated at checkout.
                   </p>
 
-                  {hasCartErrors ? (
+                  {hasCartErrors || hasPriceChanges ? (
                     <motion.button
                       disabled
                       className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-lg opacity-50 cursor-not-allowed"

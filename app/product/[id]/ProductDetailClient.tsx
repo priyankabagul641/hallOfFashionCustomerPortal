@@ -169,9 +169,16 @@ export default function ProductDetailPage() {
     (v) => v.color === selectedColorOption?.name && v.size === selectedSize
   );
 
-  const { effectivePrice, mrp, percentOff } = product
+  const { effectivePrice: saleEffectivePrice, mrp, percentOff: salePercentOff } = product
     ? getDisplayPrice(product, selectedVariant?.variantId)
     : { effectivePrice: 0, mrp: 0, percentOff: undefined };
+
+  // variantPricing rides along on the product detail response, already the
+  // backend-resolved winner (sale vs campaign vs discount) — just read it.
+  const variantCampaign = selectedVariant ? product?.variantPricing?.[selectedVariant.variantId] : undefined;
+
+  const effectivePrice = variantCampaign ? variantCampaign.finalPrice : saleEffectivePrice;
+  const percentOff = variantCampaign ? variantCampaign.discountPercent : salePercentOff;
 
   const hasScopedSale = !!(product?.saleVariantIds && product.scopedSaleDiscountPercent != null);
   const scopedSaleActive = hasScopedSale && !!selectedVariant && product!.saleVariantIds!.includes(selectedVariant.variantId);
@@ -455,13 +462,18 @@ export default function ProductDetailPage() {
                         ₹{mrp.toLocaleString()}
                       </p>
                       {percentOff !== undefined && percentOff > 0 && (
-                        <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                          {percentOff}% OFF
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${variantCampaign?.source === 'campaign' ? 'bg-accent !text-luxury-black' : 'bg-red-500'}`}>
+                          {variantCampaign?.source === 'campaign' && variantCampaign.campaignName ? `${variantCampaign.campaignName} · ` : ''}{percentOff}% OFF
                         </span>
                       )}
                     </>
                   )}
                 </div>
+                {variantCampaign?.source === 'campaign' && variantCampaign.endsAt && (
+                  <p className="text-xs text-accent font-medium">
+                    Campaign ends {new Date(variantCampaign.endsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                  </p>
+                )}
                 <p className="text-sm text-muted-foreground">
                   {product.description}
                 </p>

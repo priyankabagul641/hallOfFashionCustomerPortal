@@ -57,6 +57,7 @@ interface CartContextType {
   removeFromCart: (key: string) => void;
   updateQuantity: (key: string, quantity: number) => void;
   updateItemStock: (key: string, stock: number | undefined, minOrderQuantity: number | undefined) => void;
+  updateItemPrice: (key: string, price: number) => void;
   markItemUnavailable: (key: string) => void;
   addToWishlist: (item: WishlistItem) => void;
   removeFromWishlist: (id: string) => void;
@@ -127,6 +128,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  // Accepts a revalidated price for a cart line item (e.g. the campaign
+  // backing a discounted price expired since it was added) — see
+  // lib/api/campaigns.ts quoteCheckout.
+  const updateItemPrice = (key: string, price: number) => {
+    setCartItems((prev) =>
+      prev.map((item) => (cartItemKey(item) === key ? { ...item, price } : item))
+    );
+  };
+
   // Marks a cart item whose product fetch failed (deleted/unreachable) so the
   // UI can surface it and block checkout instead of silently using stale data.
   const markItemUnavailable = (key: string) => {
@@ -174,6 +184,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeFromCart,
         updateQuantity,
         updateItemStock,
+        updateItemPrice,
         markItemUnavailable,
         addToWishlist,
         removeFromWishlist,

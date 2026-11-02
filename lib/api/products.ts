@@ -6,6 +6,35 @@ export interface ProductColorOption {
   images: string[];
 }
 
+// Resolved winner (sale vs campaign vs marketing discount) for one variant —
+// backend-computed, never recompute precedence client-side.
+export type PricingSource = "sale" | "campaign" | "discount" | null;
+
+export interface VariantPricing {
+  finalPrice: number;
+  discountPercent: number;
+  source: PricingSource;
+  sourceId: string | null;
+  campaignName?: string;
+  endsAt?: string;
+}
+
+export type VariantPricingMap = Record<string, VariantPricing>;
+
+export interface CampaignBadge {
+  campaignId: string;
+  name: string;
+  discountPercent: number;
+  endsAt: string;
+  // Resolved best price (sale vs campaign, floored/rounded) — only present
+  // when appliesToAllVariants is true. Use directly, never recompute.
+  finalPrice: number | null;
+  // False when discount only applies to specific colors/sizes — card can't
+  // know which variant a generic add-to-cart picks, so show badge as
+  // informational only ("up to X% off"), no specific price.
+  appliesToAllVariants: boolean;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -20,6 +49,9 @@ export interface Product {
   saleVariantIds?: string[] | null;
   scopedSaleDiscountPercent?: number | null;
   scopedSalePrice?: number | null;
+  // Card-level: best campaign discount applying to any variant. Empty/absent
+  // on list reads only when no campaign applies — not a separate fetch.
+  campaignBadge?: CampaignBadge | null;
   images: string[];
   rating: number;
   reviews: number;
@@ -82,6 +114,9 @@ export interface ProductDetail extends Product {
   tags: string[];
   colorOptions: ProductColorOption[];
   variants?: ProductVariant[];
+  // Per-variant pricing map, only populated on the single-product read (list/
+  // search/collection reads have no per-variant data, rely on campaignBadge).
+  variantPricing?: VariantPricingMap;
 }
 
 export interface ProductFilters {
