@@ -6,7 +6,7 @@ export interface PublicCampaign {
   code: string | null;
   description: string | null;
   campaignType: string;
-  bannerImageUrl: string | null;
+  bannerImageUrls: string[];
   termsAndConditions: string | null;
   startDate: string;
   endDate: string;

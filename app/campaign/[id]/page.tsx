@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import useEmblaCarousel from 'embla-carousel-react';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/products/ProductCard';
 import ProductGridSkeleton from '@/components/products/ProductGridSkeleton';
@@ -19,6 +20,42 @@ function formatEndsIn(endDate: string) {
   const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
   if (days > 0) return `Ends in ${days}d ${hours}h`;
   return `Ends in ${hours}h`;
+}
+
+function CampaignHeroBanner({ images, alt }: { images: string[]; alt: string }) {
+  const [emblaRef] = useEmblaCarousel({ loop: images.length > 1 });
+
+  if (images.length === 0) return null;
+
+  if (images.length === 1) {
+    return (
+      <Image
+        src={safeImageSrc(images[0])}
+        alt={alt}
+        fill
+        className="object-cover"
+        priority
+      />
+    );
+  }
+
+  return (
+    <div className="absolute inset-0 overflow-hidden" ref={emblaRef}>
+      <div className="flex h-full">
+        {images.map((img, idx) => (
+          <div key={img + idx} className="relative flex-[0_0_100%] h-full">
+            <Image
+              src={safeImageSrc(img)}
+              alt={alt}
+              fill
+              className="object-cover"
+              priority={idx === 0}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function CampaignLandingPage() {
@@ -92,15 +129,7 @@ export default function CampaignLandingPage() {
       ) : (
         <>
           <div className="relative w-full h-[320px] md:h-[420px] bg-card">
-            {campaign.bannerImageUrl && (
-              <Image
-                src={safeImageSrc(campaign.bannerImageUrl)}
-                alt={campaign.name}
-                fill
-                className="object-cover"
-                priority
-              />
-            )}
+            <CampaignHeroBanner images={campaign.bannerImageUrls} alt={campaign.name} />
             <div className="absolute inset-0 bg-black/40 flex items-end">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
